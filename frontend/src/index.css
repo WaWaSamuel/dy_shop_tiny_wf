@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    min-height: 100%;
+  }
+
+  body {
+    @apply text-white;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(242, 115, 205, 0.38), transparent 30%),
+      radial-gradient(circle at top right, rgba(129, 104, 255, 0.28), transparent 34%),
+      radial-gradient(circle at bottom left, rgba(38, 232, 224, 0.22), transparent 26%),
+      linear-gradient(135deg, #51306b 0%, #3f3b7e 34%, #303d84 68%, #263b78 100%);
+    font-family:
+      Inter,
+      'PingFang SC',
+      'Hiragino Sans GB',
+      'Microsoft YaHei',
+      sans-serif;
+  }
+
+  * {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(38, 232, 224, 0.32);
+    color: white;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply rounded-2xl px-4 py-2 font-medium text-slate-950
+      transition-all duration-200 disabled:opacity-50;
+    background: linear-gradient(135deg, #2ce6e0 0%, #7cf7f0 100%);
+    box-shadow: 0 16px 36px rgba(44, 230, 224, 0.3);
+  }
+
+  .btn-secondary {
+    @apply rounded-2xl border border-white/10 px-4 py-2 font-medium text-white/90
+      transition-all duration-200;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .btn-outline {
+    @apply rounded-2xl border px-4 py-2 font-medium text-white/85
+      transition-all duration-200;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(18px);
+  }
+
+  .card {
+    @apply rounded-[28px] border shadow-sm;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.06) 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 20px 50px rgba(10, 8, 31, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px);
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border px-4 py-2.5 text-sm text-white
+      focus:outline-none focus:ring-2 focus:ring-brand-secondary/25 focus:border-brand-secondary
+      transition-colors duration-200;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px);
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-outline:hover,
+  .card:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.75;
+}
+
+.aurora-1 {
+  top: -10%;
+  left: -4%;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(244, 122, 210, 0.36);
+}
+
+.aurora-2 {
+  top: 18%;
+  right: 8%;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(128, 124, 255, 0.28);
+}
+
+.aurora-3 {
+  bottom: -8%;
+  left: 24%;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(38, 232, 224, 0.22);
+}
+
+.text-gray-900 {
+  color: rgba(250, 245, 255, 0.96) !important;
+}
+
+.text-gray-700 {
+  color: rgba(238, 231, 255, 0.9) !important;
+}
+
+.text-gray-600 {
+  color: rgba(219, 211, 242, 0.82) !important;
+}
+
+.text-gray-500 {
+  color: rgba(186, 176, 214, 0.82) !important;
+}
+
+.text-gray-400 {
+  color: rgba(163, 154, 195, 0.72) !important;
+}
+
+.bg-gray-50,
+.bg-gray-50\/50,
+.bg-gray-100 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.bg-white {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.border-gray-100,
+.border-gray-200,
+.border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-50\/50:hover,
+.hover\:bg-gray-100:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.shadow-xl {
+  box-shadow: 0 30px 80px rgba(10, 8, 31, 0.38) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(186, 176, 214, 0.7);
+}
+
+select {
+  color: rgba(250, 245, 255, 0.96);
+}
+
+option {
+  background: #2f2451;
+  color: white;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead th {
+  letter-spacing: 0.18em;
+}
+
+tbody tr {
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+tbody tr:hover {
+  transform: translateY(-1px);
+}
