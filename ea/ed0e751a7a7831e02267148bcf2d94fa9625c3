@@ -1,0 +1,21 @@
+.gitignore
+  s_526226860b7cab::t_507224364321af 2-4,6-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "eaed0e751a7a7831e02267148bcf2d94fa9625c3",
+  "prompts": {},
+  "sessions": {
+    "s_526226860b7cab": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a3b9b332fc390aa65bcc0ac",
+        "model": "gpt-5.4__dev"
+      },
+      "human_author": "shenhuaiye.0731 <shenhuaiye.0731@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
