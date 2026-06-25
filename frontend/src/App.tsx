@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Feedback from './pages/Feedback';
 import Products from './pages/Products';
 import Discovery from './pages/Discovery';
+import Fulfillment from './pages/Fulfillment';
 import Design from './pages/Design';
 import Settings from './pages/Settings';
 
@@ -24,6 +25,7 @@ function App() {
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/products" element={<Products />} />
             <Route path="/discovery" element={<Discovery />} />
+            <Route path="/fulfillment" element={<Fulfillment />} />
             <Route path="/design" element={<Design />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

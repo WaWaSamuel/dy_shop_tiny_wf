@@ -72,6 +72,20 @@ BEAT_SCHEDULE: dict = {
     },
 
     # =========================================================================
+    # FULFILLMENT MODULE (order polling fallback + logistics refresh)
+    # =========================================================================
+    "fulfillment-poll-new-orders-every-10min": {
+        "task": "app.modules.fulfillment.tasks.poll_new_orders_task",
+        "schedule": 600.0,  # Every 10 minutes (webhook is the primary path)
+        "options": {"queue": "fulfillment"},
+    },
+    "fulfillment-refresh-logistics-every-30min": {
+        "task": "app.modules.fulfillment.tasks.refresh_active_logistics_task",
+        "schedule": 1800.0,  # Every 30 minutes
+        "options": {"queue": "fulfillment"},
+    },
+
+    # =========================================================================
     # STATUS & REPORTING
     # =========================================================================
     "status-report-midday": {

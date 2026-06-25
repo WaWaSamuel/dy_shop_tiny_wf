@@ -5,6 +5,7 @@ import {
   Package,
   Compass,
   Palette,
+  Truck,
   Settings,
   ShoppingBag,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/feedback', icon: MessageSquare, labelKey: 'sidebar.feedback' },
   { to: '/products', icon: Package, labelKey: 'sidebar.products' },
   { to: '/discovery', icon: Compass, labelKey: 'sidebar.discovery' },
+  { to: '/fulfillment', icon: Truck, labelKey: 'sidebar.fulfillment' },
   { to: '/design', icon: Palette, labelKey: 'sidebar.design' },
   { to: '/settings', icon: Settings, labelKey: 'sidebar.settings' },
 ];

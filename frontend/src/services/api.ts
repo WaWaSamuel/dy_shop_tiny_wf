@@ -87,6 +87,87 @@ export interface DesignTemplate {
   task_type: string;
 }
 
+// ─── Fulfillment types ──────────────────────────────────────────────────────
+
+export type FulfillmentListingStatus =
+  | 'matching'
+  | 'matched'
+  | 'no_source'
+  | 'listing'
+  | 'listed'
+  | 'listing_failed';
+
+export interface FulfillmentListing {
+  id: string;
+  title: string;
+  category: string;
+  status: FulfillmentListingStatus;
+  alibaba_offer_id: string | null;
+  supplier_name: string;
+  supplier_url: string;
+  match_score: number;
+  wholesale_price: number;
+  landed_cost: number;
+  sell_price: number;
+  target_margin: number;
+  achieved_margin: number;
+  douyin_product_id: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export type FulfillmentOrderStatus =
+  | 'received'
+  | 'sourcing'
+  | 'sourced'
+  | 'shipped'
+  | 'delivered'
+  | 'fulfill_failed'
+  | 'cancelled';
+
+export interface FulfillmentSupplierOrder {
+  id: string;
+  alibaba_order_id: string | null;
+  alibaba_offer_id: string | null;
+  quantity: number;
+  total_amount: number;
+  status: string;
+  tracking_no: string | null;
+  logistics_company: string | null;
+}
+
+export interface FulfillmentOrder {
+  id: string;
+  listing_id: string | null;
+  douyin_order_id: string;
+  douyin_product_id: string | null;
+  sku_id: string | null;
+  quantity: number;
+  buyer_paid_amount: number;
+  status: FulfillmentOrderStatus;
+  error_message: string | null;
+  fulfilled_at: string | null;
+  created_at: string;
+  supplier_order: FulfillmentSupplierOrder | null;
+}
+
+export interface FulfillmentStats {
+  listings_by_status: Record<string, number>;
+  orders_by_status: Record<string, number>;
+}
+
+export interface SourceAndListResult {
+  mode: string;
+  task_id?: string | null;
+  listing_id?: string | null;
+  status?: string | null;
+  match_score?: number | null;
+  sell_price?: number | null;
+  achieved_margin?: number | null;
+  douyin_product_id?: string | null;
+  error_message?: string | null;
+}
+
 // ─── Feedback API ─────────────────────────────────────────────────────────────
 
 export const feedbackApi = {
@@ -165,6 +246,37 @@ export const designApi = {
   regenerate: (id: string) => api.post(`/design/tasks/${id}/regenerate`),
 
   getTemplates: () => api.get<{ items: DesignTemplate[] }>('/design/templates'),
+};
+
+// ─── Fulfillment API ──────────────────────────────────────────────────────────
+
+export const fulfillmentApi = {
+  listListings: (params?: { status?: string; limit?: number }) =>
+    api.get<FulfillmentListing[]>('/fulfillment/listings', { params }),
+
+  getListing: (id: string) =>
+    api.get<FulfillmentListing>(`/fulfillment/listings/${id}`),
+
+  sourceAndList: (data: {
+    title: string;
+    category?: string;
+    image_url?: string | null;
+    description?: string;
+    asset_urls?: string[];
+    source_candidate_id?: string | null;
+    auto_publish?: boolean;
+    async_mode?: boolean;
+  }) => api.post<SourceAndListResult>('/fulfillment/source-and-list', data),
+
+  listOrders: (params?: { status?: string; limit?: number }) =>
+    api.get<FulfillmentOrder[]>('/fulfillment/orders', { params }),
+
+  getOrder: (id: string) => api.get<FulfillmentOrder>(`/fulfillment/orders/${id}`),
+
+  fulfillOrder: (id: string) =>
+    api.post<FulfillmentOrder>(`/fulfillment/orders/${id}/fulfill`),
+
+  getStats: () => api.get<FulfillmentStats>('/fulfillment/stats'),
 };
 
 export default api;

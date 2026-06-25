@@ -12,6 +12,17 @@ celery_app = Celery(
     "douyin_shop_automation",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
+    # Module task packages live under app.modules.<module>.tasks and are not
+    # covered by autodiscover_tasks(["app.tasks"]); list them so workers and
+    # beat register these tasks at startup.
+    include=[
+        "app.tasks.scheduler",
+        "app.modules.discovery.tasks",
+        "app.modules.design_assets.tasks",
+        "app.modules.product_upload.tasks",
+        "app.modules.feedback.tasks",
+        "app.modules.fulfillment.tasks",
+    ],
 )
 
 celery_app.conf.update(
@@ -38,6 +49,7 @@ celery_app.conf.update(
         "app.tasks.discovery.*": {"queue": "discovery"},
         "app.tasks.design_assets.*": {"queue": "design_assets"},
         "app.tasks.feedback.*": {"queue": "feedback"},
+        "app.modules.fulfillment.tasks.*": {"queue": "fulfillment"},
     },
 
     # Retry policy

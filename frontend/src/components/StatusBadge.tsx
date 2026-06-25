@@ -30,6 +30,23 @@ const statusStyles: Record<string, { bg: string; text: string; dot: string }> = 
   medium: { bg: 'bg-yellow-50', text: 'text-yellow-700', dot: 'bg-yellow-500' },
   high: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
   critical: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+
+  // Fulfillment listing statuses
+  matching: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  matched: { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  no_source: { bg: 'bg-gray-50', text: 'text-gray-600', dot: 'bg-gray-400' },
+  listing: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  listed: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+  listing_failed: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+
+  // Fulfillment order statuses
+  received: { bg: 'bg-yellow-50', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+  sourcing: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  sourced: { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  shipped: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  delivered: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+  fulfill_failed: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  cancelled: { bg: 'bg-gray-50', text: 'text-gray-600', dot: 'bg-gray-400' },
 };
 
 export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {

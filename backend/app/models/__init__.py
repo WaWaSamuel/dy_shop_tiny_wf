@@ -23,6 +23,15 @@ from .feedback import (
     ResponseTemplate,
     Sentiment,
 )
+from .fulfillment import (
+    ListingStatus,
+    LogisticsTrack,
+    Order,
+    OrderStatus,
+    SourcedListing,
+    SupplierOrder,
+    SupplierOrderStatus,
+)
 from .product import (
     CategoryMapping,
     Product,
@@ -54,6 +63,14 @@ __all__ = [
     "SourceCandidateStatus",
     "TrendingProduct",
     "TrendingSource",
+    # Fulfillment
+    "ListingStatus",
+    "LogisticsTrack",
+    "Order",
+    "OrderStatus",
+    "SourcedListing",
+    "SupplierOrder",
+    "SupplierOrderStatus",
     # Design Assets
     "DesignTask",
     "DesignTaskStatus",

@@ -107,11 +107,13 @@ async def validation_error_handler(request: Request, exc: ValidationError) -> JS
 # --- Routers ---
 # Import and include routers for each domain module.
 from app.routers import feedback, product_upload, discovery, design_assets  # noqa: E402
+from app.modules.fulfillment.router import router as fulfillment_router  # noqa: E402
 
 app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["Feedback"])
 app.include_router(product_upload.router, prefix="/api/v1/products", tags=["Product Upload"])
 app.include_router(discovery.router, prefix="/api/v1/discovery", tags=["Discovery"])
 app.include_router(design_assets.router, prefix="/api/v1/design", tags=["Design Assets"])
+app.include_router(fulfillment_router, prefix="/api/v1")
 
 
 # --- Health Check ---

@@ -40,6 +40,21 @@ class Settings(BaseSettings):
     # --- 1688 Supply Chain ---
     ALIBABA_1688_APP_KEY: str = ""
     ALIBABA_1688_APP_SECRET: str = ""
+    # OAuth access token for the 1688 trade (下单) APIs. Search APIs only need
+    # the app key, but order placement / logistics require an authorized token.
+    ALIBABA_1688_ACCESS_TOKEN: str = ""
+
+    # --- Fulfillment (selection -> listing -> 1688 order -> logistics) ---
+    # Target gross-margin floor used when pricing a listing. 0.10 == 10%.
+    FULFILLMENT_TARGET_MARGIN: float = 0.10
+    # Hard floor: never price below this achieved margin even after rounding.
+    FULFILLMENT_MIN_MARGIN: float = 0.10
+    # Minimum fused match score (0-1) to accept a 1688 same-source supplier.
+    FULFILLMENT_MIN_MATCH_SCORE: float = 0.55
+    # Shared secret used to verify inbound 抖店 order push webhooks.
+    DOUYIN_ORDER_WEBHOOK_SECRET: str = ""
+    # Poll-fallback window (minutes) for ingesting new 抖店 orders.
+    FULFILLMENT_ORDER_POLL_LOOKBACK_MINUTES: int = 30
 
     # --- Object Storage (OSS) ---
     OSS_ACCESS_KEY: str = ""
