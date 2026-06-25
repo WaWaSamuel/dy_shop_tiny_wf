@@ -1,106 +1,79 @@
-"""Security utilities for 抖店 (Douyin Shop) API authentication.
+"""JWT authentication utilities."""
 
-Implements HMAC-SHA256 request signing per the Douyin Open Platform specification,
-and token refresh logic to maintain long-lived access.
-"""
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
-import hashlib
-import hmac
-import time
-from typing import Any
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
-import httpx
+from app.core.config import get_settings
 
-from app.core.config import settings
+settings = get_settings()
 
-_DOUYIN_TOKEN_URL = "https://openapi-fxg.jinritemai.com/token/refresh"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def sign_request(
-    method: str,
-    path: str,
-    params: dict[str, Any],
-    body: str = "",
-    timestamp: int | None = None,
-) -> dict[str, str]:
-    """Generate HMAC-SHA256 signature headers for a 抖店 API request.
+def hash_password(password: str) -> str:
+    """Hash a plain-text password."""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain-text password against a hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def create_access_token(
+    subject: str,
+    extra_claims: Optional[Dict[str, Any]] = None,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Create a signed JWT access token.
 
     Args:
-        method: HTTP method (GET, POST, etc.).
-        path: API path (e.g., "/order/list").
-        params: Query parameters to include in signing.
-        body: Request body string (JSON-serialized for POST requests).
-        timestamp: Unix timestamp; defaults to current time.
+        subject: Token subject (typically user ID).
+        extra_claims: Additional payload claims.
+        expires_delta: Custom expiry. Defaults to settings value.
 
     Returns:
-        Dictionary of headers to attach to the outgoing request, including
-        the computed signature, app key, and timestamp.
+        Encoded JWT string.
     """
-    if timestamp is None:
-        timestamp = int(time.time())
-
-    # Sort parameters alphabetically by key
-    sorted_params = "&".join(
-        f"{k}={v}" for k, v in sorted(params.items()) if v is not None
-    )
-
-    # Construct the string to sign
-    sign_string = f"{settings.DOUYIN_APP_KEY}{method}{path}{sorted_params}{body}{timestamp}"
-
-    # Compute HMAC-SHA256
-    signature = hmac.new(
-        settings.DOUYIN_APP_SECRET.encode("utf-8"),
-        sign_string.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-    return {
-        "app_key": settings.DOUYIN_APP_KEY,
-        "timestamp": str(timestamp),
-        "sign": signature,
-        "sign_method": "hmac-sha256",
+    now = datetime.now(timezone.utc)
+    expire = now + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    payload: Dict[str, Any] = {
+        "sub": subject,
+        "iat": now,
+        "exp": expire,
+        "type": "access",
     }
+    if extra_claims:
+        payload.update(extra_claims)
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-async def refresh_access_token() -> dict[str, str]:
-    """Refresh the Douyin access token using the stored refresh token.
+def create_refresh_token(subject: str) -> str:
+    """Create a signed JWT refresh token."""
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    payload: Dict[str, Any] = {
+        "sub": subject,
+        "iat": now,
+        "exp": expire,
+        "type": "refresh",
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_token(token: str) -> Dict[str, Any]:
+    """Decode and validate a JWT token.
+
+    Args:
+        token: Encoded JWT string.
 
     Returns:
-        Dictionary containing the new access_token and refresh_token.
+        Decoded payload dictionary.
 
     Raises:
-        DouyinAPIError: If the token refresh request fails.
+        JWTError: If token is invalid or expired.
     """
-    from app.core.exceptions import DouyinAPIError
-
-    payload = {
-        "app_id": settings.DOUYIN_APP_KEY,
-        "app_secret": settings.DOUYIN_APP_SECRET,
-        "refresh_token": settings.DOUYIN_REFRESH_TOKEN,
-        "grant_type": "refresh_token",
-    }
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(_DOUYIN_TOKEN_URL, json=payload)
-
-    if response.status_code != 200:
-        raise DouyinAPIError(
-            message="Token refresh request failed",
-            status_code=response.status_code,
-            response_body=response.text,
-        )
-
-    data = response.json()
-    if data.get("err_no") != 0:
-        raise DouyinAPIError(
-            message=f"Token refresh error: {data.get('message', 'unknown')}",
-            status_code=response.status_code,
-            response_body=response.text,
-        )
-
-    token_data = data.get("data", {})
-    return {
-        "access_token": token_data.get("access_token", ""),
-        "refresh_token": token_data.get("refresh_token", ""),
-        "expires_in": token_data.get("expires_in", 0),
-    }
+    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])

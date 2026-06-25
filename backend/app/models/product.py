@@ -1,94 +1,81 @@
+"""Product model for managing product listings across platforms."""
+
 import enum
-import uuid
-from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import Enum, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from app.models.base import BaseModel
 
 
 class ProductStatus(str, enum.Enum):
+    """Product lifecycle status."""
+
     DRAFT = "draft"
-    UPLOADING = "uploading"
-    UNDER_REVIEW = "under_review"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    ONLINE = "online"
-    OFFLINE = "offline"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    OUT_OF_STOCK = "out_of_stock"
+    DISCONTINUED = "discontinued"
 
 
-class ProductSource(str, enum.Enum):
-    MANUAL = "manual"
-    IMPORT_1688 = "1688_import"
-    DISCOVERY = "discovery"
+class Product(BaseModel):
+    """Product entity representing a sellable item across platforms."""
 
-
-class Product(Base):
     __tablename__ = "products"
 
-    douyin_product_id: Mapped[Optional[str]] = mapped_column(
-        String(64), nullable=True, unique=True
-    )
-    name: Mapped[str] = mapped_column(String(512), nullable=False)
-    category_id: Mapped[str] = mapped_column(String(64), nullable=False)
-    category_name: Mapped[str] = mapped_column(String(256), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    name: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    sku: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     status: Mapped[ProductStatus] = mapped_column(
-        String(16), nullable=False, default=ProductStatus.DRAFT
+        Enum(ProductStatus, name="product_status"),
+        default=ProductStatus.DRAFT,
+        nullable=False,
+        index=True,
     )
-    images: Mapped[list[Any]] = mapped_column(JSON, default=list)
-    sku_data: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    price_range: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    source: Mapped[ProductSource] = mapped_column(
-        String(16), nullable=False, default=ProductSource.MANUAL
+    cost_price: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True, comment="Cost price from supplier"
     )
-    listing_submitted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    listing_approved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    selling_price: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True, comment="Selling price to customer"
+    )
+    profit_margin: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True, comment="Calculated profit margin percentage"
+    )
+    supplier_id: Mapped[Optional[str]] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("suppliers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    platform: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="Primary platform (e.g., shopify, tiktok)"
+    )
+    platform_product_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, comment="Product ID on the external platform"
+    )
+    images: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True, comment="List of image URLs and metadata"
+    )
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    skus: Mapped[list["ProductSKU"]] = relationship(
-        back_populates="product", cascade="all, delete-orphan"
+    # Relationships
+    supplier: Mapped[Optional["Supplier"]] = relationship(  # noqa: F821
+        "Supplier", back_populates="products", lazy="selectin"
+    )
+    orders: Mapped[list["Order"]] = relationship(  # noqa: F821
+        "Order", back_populates="product", lazy="selectin"
+    )
+    creative_assets: Mapped[list["CreativeAsset"]] = relationship(  # noqa: F821
+        "CreativeAsset", back_populates="product", lazy="selectin"
+    )
+    flow_nodes: Mapped[list["FlowNode"]] = relationship(  # noqa: F821
+        "FlowNode", back_populates="product", lazy="selectin"
+    )
+    shop_products: Mapped[list["ShopProduct"]] = relationship(  # noqa: F821
+        "ShopProduct", back_populates="product", lazy="selectin"
     )
 
-    __table_args__ = (
-        Index("ix_products_status", "status"),
-        Index("ix_products_category_id", "category_id"),
-        Index("ix_products_source", "source"),
-        Index("ix_products_douyin_product_id", "douyin_product_id"),
-    )
-
-
-class ProductSKU(Base):
-    __tablename__ = "product_skus"
-
-    product_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
-    )
-    sku_name: Mapped[str] = mapped_column(String(256), nullable=False)
-    attributes: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    market_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    sku_image_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
-
-    product: Mapped["Product"] = relationship(back_populates="skus")
-
-    __table_args__ = (
-        Index("ix_product_skus_product_id", "product_id"),
-    )
-
-
-class CategoryMapping(Base):
-    __tablename__ = "category_mappings"
-
-    category_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
-    category_name: Mapped[str] = mapped_column(String(256), nullable=False)
-    parent_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    required_attributes: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    image_requirements: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-
-    __table_args__ = (
-        Index("ix_category_mappings_parent_id", "parent_id"),
-    )
+    def __repr__(self) -> str:
+        return f"<Product(id={self.id}, sku={self.sku}, name={self.name})>"

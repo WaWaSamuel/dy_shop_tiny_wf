@@ -1,8 +1,7 @@
-"""Application configuration using Pydantic Settings.
+"""Application configuration via Pydantic Settings."""
 
-Loads configuration from environment variables with sensible defaults
-for local development.
-"""
+from functools import lru_cache
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,57 +13,59 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",
     )
 
-    # --- Database ---
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/douyin_shop"
+    # App
+    APP_NAME: str = "Personal Studio"
+    APP_VERSION: str = "0.1.0"
+    DEBUG: bool = False
+    ENVIRONMENT: str = "development"
+    API_V1_PREFIX: str = "/api/v1"
 
-    # --- Redis ---
+    # CORS
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+
+    # Security / JWT
+    SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # PostgreSQL - Write (primary)
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/personal_studio"
+    # PostgreSQL - Read replica (falls back to primary if not set)
+    DATABASE_READ_URL: str = ""
+
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_RECYCLE: int = 3600
+    DB_ECHO: bool = False
+
+    # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_MAX_CONNECTIONS: int = 50
 
-    # --- Douyin (抖店) API Credentials ---
-    DOUYIN_APP_KEY: str = ""
-    DOUYIN_APP_SECRET: str = ""
-    DOUYIN_ACCESS_TOKEN: str = ""
-    DOUYIN_REFRESH_TOKEN: str = ""
-
-    # --- AI Service ---
-    AI_API_KEY: str = ""
-    AI_API_BASE_URL: str = "https://api.openai.com/v1"
-
-    # --- Third-party Data Platforms ---
-    CHANMAMA_API_KEY: str = ""
-    FEIGUA_API_KEY: str = ""
-
-    # --- 1688 Supply Chain ---
-    ALIBABA_1688_APP_KEY: str = ""
-    ALIBABA_1688_APP_SECRET: str = ""
-    # OAuth access token for the 1688 trade (下单) APIs. Search APIs only need
-    # the app key, but order placement / logistics require an authorized token.
-    ALIBABA_1688_ACCESS_TOKEN: str = ""
-
-    # --- Fulfillment (selection -> listing -> 1688 order -> logistics) ---
-    # Target gross-margin floor used when pricing a listing. 0.10 == 10%.
-    FULFILLMENT_TARGET_MARGIN: float = 0.10
-    # Hard floor: never price below this achieved margin even after rounding.
-    FULFILLMENT_MIN_MARGIN: float = 0.10
-    # Minimum fused match score (0-1) to accept a 1688 same-source supplier.
-    FULFILLMENT_MIN_MATCH_SCORE: float = 0.55
-    # Shared secret used to verify inbound 抖店 order push webhooks.
-    DOUYIN_ORDER_WEBHOOK_SECRET: str = ""
-    # Poll-fallback window (minutes) for ingesting new 抖店 orders.
-    FULFILLMENT_ORDER_POLL_LOOKBACK_MINUTES: int = 30
-
-    # --- Object Storage (OSS) ---
-    OSS_ACCESS_KEY: str = ""
-    OSS_SECRET_KEY: str = ""
-    OSS_BUCKET: str = "douyin-shop-assets"
-    OSS_ENDPOINT: str = "https://oss-cn-hangzhou.aliyuncs.com"
-
-    # --- Celery ---
+    # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
+    CELERY_TASK_SERIALIZER: str = "json"
+    CELERY_RESULT_SERIALIZER: str = "json"
+
+    # Provider integrations
+    PROVIDER_TIMEOUT: int = 30
+    PROVIDER_RETRY_COUNT: int = 3
+
+    # AI / Creative
+    OPENAI_API_KEY: str = ""
+    STABILITY_API_KEY: str = ""
+
+    @property
+    def database_read_url(self) -> str:
+        """Return read replica URL or fall back to primary."""
+        return self.DATABASE_READ_URL or self.DATABASE_URL
 
 
-settings = Settings()
+@lru_cache()
+def get_settings() -> Settings:
+    """Cached settings singleton."""
+    return Settings()

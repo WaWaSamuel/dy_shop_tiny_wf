@@ -1,41 +1,33 @@
-"""Redis connection pool using aioredis (redis-py async interface)."""
+"""Redis connection pool using redis.asyncio (aioredis successor)."""
 
-from redis.asyncio import ConnectionPool, Redis
+from typing import Optional
 
-from app.core.config import settings
+import redis.asyncio as aioredis
 
-_pool: ConnectionPool | None = None
+from app.core.config import get_settings
+
+settings = get_settings()
+
+_pool: Optional[aioredis.Redis] = None
 
 
-async def get_redis_pool() -> ConnectionPool:
-    """Return the shared Redis connection pool, creating it on first call."""
+async def get_redis_pool() -> aioredis.Redis:
+    """Return the shared Redis connection pool, creating it if needed."""
     global _pool
     if _pool is None:
-        _pool = ConnectionPool.from_url(
+        _pool = aioredis.from_url(
             settings.REDIS_URL,
-            max_connections=50,
+            max_connections=settings.REDIS_MAX_CONNECTIONS,
             decode_responses=True,
+            socket_connect_timeout=5,
+            retry_on_timeout=True,
         )
     return _pool
 
 
-async def get_redis() -> Redis:
-    """Get a Redis client instance backed by the shared pool.
-
-    Usage as a FastAPI dependency::
-
-        @router.get("/cached")
-        async def cached_endpoint(redis: Redis = Depends(get_redis)):
-            value = await redis.get("my_key")
-            ...
-    """
-    pool = await get_redis_pool()
-    return Redis(connection_pool=pool)
-
-
 async def close_redis_pool() -> None:
-    """Gracefully close the Redis connection pool on application shutdown."""
+    """Close the Redis connection pool (used during shutdown)."""
     global _pool
     if _pool is not None:
-        await _pool.disconnect()
+        await _pool.close()
         _pool = None

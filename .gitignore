@@ -1,24 +1,34 @@
+# ==================== IDE / Editor ====================
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS files
+# ==================== OS files ====================
 .DS_Store
+Thumbs.db
 
-# Frontend
+# ==================== Frontend ====================
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/coverage/
+frontend/*.tsbuildinfo
 
-# Python / backend
+# ==================== Python / Backend ====================
 backend/.venv/
+backend/venv/
 backend/outputs/
 backend/**/__pycache__/
+backend/**/*.py[cod]
 backend/.pytest_cache/
 backend/.mypy_cache/
+backend/.ruff_cache/
 backend/.coverage
 backend/htmlcov/
+backend/*.egg-info/
 
-# Environment files
+# ==================== Environment files ====================
 .env
 .env.*
 !.env.example
@@ -29,9 +39,14 @@ frontend/.env
 frontend/.env.*
 !frontend/.env.example
 
-# Logs
+# ==================== Logs ====================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# ==================== Docker / Local data ====================
+postgres_data/
+redis_data/
+*.pid

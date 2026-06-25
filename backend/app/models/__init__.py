@@ -1,80 +1,63 @@
-from .base import Base
-from .design_assets import (
-    DesignTask,
-    DesignTaskStatus,
-    DesignTaskType,
-    DesignTemplate,
-    DesignTemplateType,
+"""Models package - imports all ORM models for Alembic discovery and application use."""
+
+from app.models.base import Base, BaseModel, TimestampMixin
+from app.models.creative import (
+    ABTestStatus,
+    AssetABTest,
+    AssetStatus,
+    AssetType,
+    CategoryTag,
+    CreativeAsset,
+    SystemWordRule,
 )
-from .discovery import (
-    OperatorDecision,
-    ProductBrief,
-    SourceCandidate,
-    SourceCandidateStatus,
-    TrendingProduct,
-    TrendingSource,
+from app.models.flow import FlowNode, FlowNodeStatus, FlowNodeType
+from app.models.notification import (
+    Notification,
+    NotificationChannel,
+    NotificationStatus,
+    NotificationType,
 )
-from .feedback import (
-    FeedbackEvent,
-    FeedbackSource,
-    FeedbackStatus,
-    FeedbackType,
-    KnowledgeBaseEntry,
-    ResponseTemplate,
-    Sentiment,
-)
-from .fulfillment import (
-    ListingStatus,
-    LogisticsTrack,
-    Order,
-    OrderStatus,
-    SourcedListing,
-    SupplierOrder,
-    SupplierOrderStatus,
-)
-from .product import (
-    CategoryMapping,
-    Product,
-    ProductSKU,
-    ProductSource,
-    ProductStatus,
-)
+from app.models.order import Order, OrderStatus
+from app.models.product import Product, ProductStatus
+from app.models.provider_config import ProviderConfig
+from app.models.shop import Shop, ShopPlatform, ShopProduct, ShopStatus
+from app.models.supplier import Supplier
 
 __all__ = [
+    # Base
     "Base",
-    # Feedback
-    "FeedbackEvent",
-    "FeedbackSource",
-    "FeedbackStatus",
-    "FeedbackType",
-    "KnowledgeBaseEntry",
-    "ResponseTemplate",
-    "Sentiment",
+    "BaseModel",
+    "TimestampMixin",
     # Product
-    "CategoryMapping",
     "Product",
-    "ProductSKU",
-    "ProductSource",
     "ProductStatus",
-    # Discovery
-    "OperatorDecision",
-    "ProductBrief",
-    "SourceCandidate",
-    "SourceCandidateStatus",
-    "TrendingProduct",
-    "TrendingSource",
-    # Fulfillment
-    "ListingStatus",
-    "LogisticsTrack",
+    # Order
     "Order",
     "OrderStatus",
-    "SourcedListing",
-    "SupplierOrder",
-    "SupplierOrderStatus",
-    # Design Assets
-    "DesignTask",
-    "DesignTaskStatus",
-    "DesignTaskType",
-    "DesignTemplate",
-    "DesignTemplateType",
+    # Supplier
+    "Supplier",
+    # Shop
+    "Shop",
+    "ShopPlatform",
+    "ShopProduct",
+    "ShopStatus",
+    # Creative
+    "CreativeAsset",
+    "AssetType",
+    "AssetStatus",
+    "AssetABTest",
+    "ABTestStatus",
+    "CategoryTag",
+    "SystemWordRule",
+    # Flow
+    "FlowNode",
+    "FlowNodeType",
+    "FlowNodeStatus",
+    # Notification
+    "Notification",
+    "NotificationType",
+    "NotificationChannel",
+    "NotificationStatus",
+    # Provider
+    "ProviderConfig",
 ]
