@@ -14,18 +14,12 @@ import {
   Statistic,
   Tooltip,
 } from 'antd';
-import {
-  SearchOutlined,
-  ExportOutlined,
-  EyeOutlined,
-  TruckOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Order } from '@/types';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const mockOrders: Order[] = [
@@ -110,10 +104,10 @@ const mockOrders: Order[] = [
 ];
 
 const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending: { label: '待处理', color: 'orange', icon: <ClockCircleOutlined /> },
-  processing: { label: '处理中', color: 'blue', icon: <ClockCircleOutlined /> },
-  shipped: { label: '已发货', color: 'cyan', icon: <TruckOutlined /> },
-  delivered: { label: '已签收', color: 'green', icon: <CheckCircleOutlined /> },
+  pending: { label: '待处理', color: 'orange', icon: <StickerIcon src={stickers.statusPending} alt="待处理" size="xs" /> },
+  processing: { label: '处理中', color: 'blue', icon: <StickerIcon src={stickers.statusRunning} alt="处理中" size="xs" /> },
+  shipped: { label: '已发货', color: 'cyan', icon: <StickerIcon src={stickers.menuOrders} alt="已发货" size="xs" /> },
+  delivered: { label: '已签收', color: 'green', icon: <StickerIcon src={stickers.statusCompleted} alt="已签收" size="xs" /> },
   cancelled: { label: '已取消', color: 'default', icon: null },
   refunded: { label: '已退款', color: 'red', icon: null },
 };
@@ -177,7 +171,7 @@ export default function Orders() {
       width: 80,
       render: () => (
         <Tooltip title="查看详情">
-          <Button type="link" icon={<EyeOutlined />} size="small" />
+          <Button type="link" icon={<StickerIcon src={stickers.actionView} alt="查看详情" size="sm" />} size="small" />
         </Tooltip>
       ),
     },
@@ -185,11 +179,8 @@ export default function Orders() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          订单管理
-        </Title>
-        <Button icon={<ExportOutlined />}>导出订单</Button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
+        <Button icon={<StickerIcon src={stickers.actionExport} alt="导出订单" size="sm" />}>导出订单</Button>
       </div>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -221,7 +212,7 @@ export default function Orders() {
             <Space>
               <Input
                 placeholder="搜索订单号/商品/买家..."
-                prefix={<SearchOutlined />}
+                prefix={<StickerIcon src={stickers.actionSearch} alt="搜索订单" size="sm" />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear

@@ -10,20 +10,13 @@ import {
   Select,
   Row,
   Col,
-  Typography,
   Image,
   Tooltip,
 } from 'antd';
-import {
-  SearchOutlined,
-  PlusOutlined,
-  NodeIndexOutlined,
-  FilterOutlined,
-} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Product } from '@/types';
-
-const { Title } = Typography;
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
 const mockProducts: Product[] = [
   {
@@ -192,7 +185,7 @@ export default function Products() {
           <Tooltip title="查看全链路">
             <Button
               type="link"
-              icon={<NodeIndexOutlined />}
+              icon={<StickerIcon src={stickers.actionFlow} alt="查看全链路" size="sm" />}
               onClick={() => navigate(`/project/ecommerce/flow/${record.id}`)}
             />
           </Tooltip>
@@ -203,11 +196,8 @@ export default function Products() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          商品管理
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
+        <Button type="primary" icon={<StickerIcon src={stickers.actionAdd} alt="添加商品" size="sm" />}>
           添加商品
         </Button>
       </div>
@@ -217,7 +207,7 @@ export default function Products() {
           <Col flex="auto">
             <Input
               placeholder="搜索商品名称或 SKU..."
-              prefix={<SearchOutlined />}
+              prefix={<StickerIcon src={stickers.actionSearch} alt="搜索商品" size="sm" />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
@@ -237,7 +227,7 @@ export default function Products() {
                   label: v.label,
                 }))}
               />
-              <Button icon={<FilterOutlined />}>更多筛选</Button>
+              <Button icon={<StickerIcon src={stickers.actionFilter} alt="更多筛选" size="sm" />}>更多筛选</Button>
             </Space>
           </Col>
         </Row>

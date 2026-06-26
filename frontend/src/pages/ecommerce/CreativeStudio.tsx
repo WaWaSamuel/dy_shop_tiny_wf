@@ -15,15 +15,10 @@ import {
   Timeline,
   Tooltip,
 } from 'antd';
-import {
-  ThunderboltOutlined,
-  PictureOutlined,
-  HistoryOutlined,
-  StarOutlined,
-  StarFilled,
-} from '@ant-design/icons';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 
 interface VersionCard {
@@ -93,10 +88,6 @@ export default function CreativeStudio() {
 
   return (
     <div>
-      <Title level={4} style={{ marginBottom: 24 }}>
-        素材工作台
-      </Title>
-
       <Row gutter={24}>
         {/* Left config panel */}
         <Col xs={24} lg={7}>
@@ -172,7 +163,7 @@ export default function CreativeStudio() {
 
               <Button
                 type="primary"
-                icon={<ThunderboltOutlined />}
+                icon={<StickerIcon src={stickers.actionGenerate} alt="生成素材" size="sm" />}
                 block
                 size="large"
                 onClick={handleGenerate}
@@ -189,7 +180,7 @@ export default function CreativeStudio() {
             title="版本预览"
             extra={
               <Space>
-                <Tag icon={<PictureOutlined />} color="blue">
+                <Tag icon={<StickerIcon src={stickers.actionImage} alt="版本预览" size="xs" />} color="blue">
                   {versions.length} 个版本
                 </Tag>
               </Space>
@@ -217,7 +208,7 @@ export default function CreativeStudio() {
                           <Button
                             type="text"
                             size="small"
-                            icon={ver.starred ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+                            icon={<StickerIcon src={stickers.actionStar} alt="收藏" size="sm" />}
                             style={{ position: 'absolute', top: 4, right: 4 }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -247,7 +238,7 @@ export default function CreativeStudio() {
             title="生成历史"
             size="small"
             style={{ marginTop: 16 }}
-            extra={<HistoryOutlined />}
+            extra={<StickerIcon src={stickers.actionHistory} alt="生成历史" size="sm" />}
           >
             <Timeline
               mode="left"

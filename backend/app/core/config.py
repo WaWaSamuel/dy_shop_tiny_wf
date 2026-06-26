@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     STABILITY_API_KEY: str = ""
 
+    # Feishu IM Bot
+    FEISHU_BOT_ENABLED: bool = False
+    FEISHU_APP_ID: str = ""
+    FEISHU_APP_SECRET: str = ""
+    FEISHU_BASE_DOMAIN: str = "https://open.feishu.cn"
+    FEISHU_BOT_TARGET_OPEN_ID: str = ""
+    FEISHU_BOT_OWNER_ID: str = ""
+    FEISHU_BOT_DEFAULT_CHAT_ID: str = ""
+    FEISHU_BOT_PUSH_TOKEN: str = ""
+
     @property
     def database_read_url(self) -> str:
         """Return read replica URL or fall back to primary."""

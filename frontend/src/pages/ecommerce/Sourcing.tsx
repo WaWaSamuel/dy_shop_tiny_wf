@@ -11,13 +11,11 @@ import {
   Avatar,
   Rate,
 } from 'antd';
-import {
-  SearchOutlined,
-  ShopOutlined,
-} from '@ant-design/icons';
 import SourceBadge from '@/components/common/SourceBadge';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface SourceProduct {
   id: string;
@@ -128,13 +126,10 @@ export default function Sourcing() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          选品中心
-        </Title>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
         <Input
           placeholder="搜索商品..."
-          prefix={<SearchOutlined />}
+          prefix={<StickerIcon src={stickers.actionSearch} alt="搜索商品" size="sm" />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           allowClear
@@ -193,7 +188,7 @@ export default function Sourcing() {
                     </Space>
                     <div style={{ marginTop: 8 }}>
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        <ShopOutlined /> {product.supplier}
+                        <StickerIcon src={stickers.actionSupplier} alt="供应商" size="xs" /> {product.supplier}
                       </Text>
                     </div>
                   </div>

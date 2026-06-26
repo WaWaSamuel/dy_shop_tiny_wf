@@ -1,13 +1,7 @@
-import { Row, Col, Card, Statistic, Typography, Table, Tag } from 'antd';
-import {
-  ShoppingCartOutlined,
-  DollarOutlined,
-  RiseOutlined,
-  ShopOutlined,
-} from '@ant-design/icons';
+import { Row, Col, Card, Statistic, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-
-const { Title } = Typography;
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
 interface RecentOrder {
   key: string;
@@ -51,23 +45,17 @@ const columns: ColumnsType<RecentOrder> = [
 export default function Overview() {
   return (
     <div className="page-shell">
-      <div className="hero-panel compact-hero" style={{ marginBottom: 18 }}>
-        <Title level={4} className="page-title compact-page-title">
-          数据看板
-        </Title>
-      </div>
-
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card className="stats-glass-card">
             <div className="metric-strip">
               <div className="metric-badge">
-                <ShopOutlined style={{ color: '#fff', fontSize: 18 }} />
+                <StickerIcon src={stickers.overviewInventory} alt="在售商品" size="lg" />
               </div>
               <Statistic
                 title="在售商品总数"
                 value={1286}
-                valueStyle={{ color: '#fff' }}
+                valueStyle={{ color: 'var(--text-main)' }}
               />
             </div>
           </Card>
@@ -76,12 +64,12 @@ export default function Overview() {
           <Card className="stats-glass-card">
             <div className="metric-strip">
               <div className="metric-badge">
-                <ShoppingCartOutlined style={{ color: '#fff', fontSize: 18 }} />
+                <StickerIcon src={stickers.overviewOrders} alt="今日订单" size="lg" />
               </div>
               <Statistic
                 title="今日订单"
                 value={87}
-                valueStyle={{ color: '#fff' }}
+                valueStyle={{ color: 'var(--text-main)' }}
               />
             </div>
           </Card>
@@ -90,13 +78,13 @@ export default function Overview() {
           <Card className="stats-glass-card">
             <div className="metric-strip">
               <div className="metric-badge">
-                <DollarOutlined style={{ color: '#fff', fontSize: 18 }} />
+                <StickerIcon src={stickers.overviewRevenue} alt="今日营收" size="lg" />
               </div>
               <Statistic
                 title="今日营收"
                 value={3562.8}
                 precision={2}
-                valueStyle={{ color: '#fff' }}
+                valueStyle={{ color: 'var(--text-main)' }}
                 suffix="USD"
               />
             </div>
@@ -106,13 +94,13 @@ export default function Overview() {
           <Card className="stats-glass-card">
             <div className="metric-strip">
               <div className="metric-badge">
-                <RiseOutlined style={{ color: '#fff', fontSize: 18 }} />
+                <StickerIcon src={stickers.overviewGrowth} alt="利润率" size="lg" />
               </div>
               <Statistic
                 title="利润率"
                 value={32.5}
                 precision={1}
-                valueStyle={{ color: '#fff' }}
+                valueStyle={{ color: 'var(--text-main)' }}
                 suffix="%"
               />
             </div>

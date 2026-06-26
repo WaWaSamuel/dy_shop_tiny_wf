@@ -167,6 +167,80 @@ frontend/.env.example
 
 如果只是本地用 Docker Compose 启动，通常不需要额外手动创建 `.env` 文件。
 
+### 6.1 飞书 IM 机器人配置
+
+后端已接入飞书长连接模式，配置完成后，`backend` 服务启动时会自动建立 WebSocket 长连接。
+
+先在本机 shell 中注入环境变量，不要把密钥直接写进仓库文件：
+
+```bash
+export FEISHU_BOT_ENABLED=true
+export FEISHU_APP_ID=你的_app_id
+export FEISHU_APP_SECRET=你的_app_secret
+export FEISHU_BOT_TARGET_OPEN_ID=你的飞书_open_id
+export FEISHU_BOT_PUSH_TOKEN=自定义一个长随机串
+```
+
+如果你还要让机器人执行订单类业务命令，再额外配置：
+
+```bash
+export FEISHU_BOT_OWNER_ID=你的业务_owner_id
+```
+
+如果你希望在没有 `open_id` 时回退到固定群，再额外配置：
+
+```bash
+export FEISHU_BOT_DEFAULT_CHAT_ID=oc_xxx
+```
+
+然后重建并启动后端：
+
+```bash
+docker compose up -d --build backend
+```
+
+飞书开放平台侧需要同步完成这些设置：
+
+1. 打开应用的 Bot 能力
+2. 事件订阅方式选择“长连接 / WebSocket”
+3. 订阅事件 `im.message.receive_v1`
+4. 给应用加上消息读取与发送权限
+5. 发布新版本，让权限和 Bot 能力生效
+
+当前机器人支持的文本命令：
+
+```text
+帮助
+订单列表 [状态]
+确认订单 <订单ID>
+推送新闻 <标题> | <链接> | <摘要>
+```
+
+推送优先级：
+
+1. `FEISHU_BOT_TARGET_OPEN_ID`
+2. `FEISHU_BOT_DEFAULT_CHAT_ID`
+3. 当前聊天会话
+
+服务端推送接口：
+
+```bash
+POST /api/v1/feishu/orders/confirm/request
+POST /api/v1/feishu/news/push
+```
+
+其中：
+
+- 订单确认会发送结构化卡片，并等待用户在飞书里回复 `确认` 或 `取消`
+- 新闻推送会发送热点卡片，支持 `items[]` 形式的多条标题、摘要和超链接
+
+另外提供一条服务端推送接口：
+
+```bash
+POST /api/v1/feishu/news/push
+Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
+```
+
 ## 7. 常见问题
 
 ### 7.1 `docker: command not found`

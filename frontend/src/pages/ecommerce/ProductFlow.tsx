@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ReactFlow,
   Background,
@@ -17,7 +16,7 @@ import FlowNode from '@/components/flow/FlowNode';
 import NodeDrawer from '@/components/flow/NodeDrawer';
 import type { FlowNodeData } from '@/types';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const nodeTypes = { custom: FlowNode };
 
@@ -71,7 +70,6 @@ function buildEdges(steps: FlowNodeData[]): Edge[] {
 }
 
 export default function ProductFlow() {
-  const { id } = useParams<{ id: string }>();
   const [nodes, , onNodesChange] = useNodesState(buildNodes(flowSteps));
   const [edges, , onEdgesChange] = useEdgesState(buildEdges(flowSteps));
   const [selectedNode, setSelectedNode] = useState<FlowNodeData | null>(null);
@@ -112,13 +110,6 @@ export default function ProductFlow() {
 
   return (
     <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          商品全链路 - {id === 'default' ? '流程总览' : `商品 #${id}`}
-        </Title>
-        <Text type="secondary">点击节点查看详情，使用 ← → 键切换节点</Text>
-      </div>
-
       <Card
         style={{ flex: 1, overflow: 'hidden' }}
         bodyStyle={{ padding: 0, height: '100%' }}

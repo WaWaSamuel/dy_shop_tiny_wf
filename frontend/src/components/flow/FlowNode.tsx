@@ -1,12 +1,9 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Typography } from 'antd';
-import {
-  CheckCircleOutlined,
-  SyncOutlined,
-  ClockCircleOutlined,
-} from '@ant-design/icons';
 import type { FlowNodeData } from '@/types';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
 const { Text } = Typography;
 
@@ -15,25 +12,25 @@ const statusStyles: Record<string, { bg: string; border: string; color: string; 
     bg: '#f6ffed',
     border: '#b7eb8f',
     color: '#52c41a',
-    icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+    icon: <StickerIcon src={stickers.statusCompleted} alt="已完成" size="sm" />,
   },
   running: {
     bg: '#e6f4ff',
     border: '#91caff',
     color: '#1677ff',
-    icon: <SyncOutlined spin style={{ color: '#1677ff' }} />,
+    icon: <StickerIcon src={stickers.statusRunning} alt="进行中" size="sm" />,
   },
   pending: {
     bg: '#fafafa',
     border: '#d9d9d9',
     color: '#999',
-    icon: <ClockCircleOutlined style={{ color: '#999' }} />,
+    icon: <StickerIcon src={stickers.statusPending} alt="待处理" size="sm" />,
   },
   failed: {
     bg: '#fff2f0',
     border: '#ffccc7',
     color: '#ff4d4f',
-    icon: <ClockCircleOutlined style={{ color: '#ff4d4f' }} />,
+    icon: <StickerIcon src={stickers.statusFailed} alt="失败" size="sm" />,
   },
 };
 

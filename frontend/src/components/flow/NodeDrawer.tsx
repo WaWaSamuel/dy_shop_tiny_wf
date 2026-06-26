@@ -9,17 +9,9 @@ import {
   Divider,
   Empty,
 } from 'antd';
-import {
-  LeftOutlined,
-  RightOutlined,
-  CheckCircleOutlined,
-  SyncOutlined,
-  ClockCircleOutlined,
-  PlayCircleOutlined,
-  ReloadOutlined,
-  LinkOutlined,
-} from '@ant-design/icons';
 import type { FlowLog, FlowNodeData } from '@/types';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -31,10 +23,10 @@ interface NodeDrawerProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  completed: { label: '已完成', color: 'success', icon: <CheckCircleOutlined /> },
-  running: { label: '进行中', color: 'processing', icon: <SyncOutlined spin /> },
-  pending: { label: '待处理', color: 'default', icon: <ClockCircleOutlined /> },
-  failed: { label: '失败', color: 'error', icon: <ClockCircleOutlined /> },
+  completed: { label: '已完成', color: 'success', icon: <StickerIcon src={stickers.statusCompleted} alt="已完成" size="xs" /> },
+  running: { label: '进行中', color: 'processing', icon: <StickerIcon src={stickers.statusRunning} alt="进行中" size="xs" /> },
+  pending: { label: '待处理', color: 'default', icon: <StickerIcon src={stickers.statusPending} alt="待处理" size="xs" /> },
+  failed: { label: '失败', color: 'error', icon: <StickerIcon src={stickers.statusFailed} alt="失败" size="xs" /> },
 };
 
 const mockLogs: FlowLog[] = [
@@ -70,10 +62,10 @@ export default function NodeDrawer({ open, node, onClose, onNavigate }: NodeDraw
       onClose={onClose}
       extra={
         <Space>
-          <Button icon={<LeftOutlined />} size="small" onClick={() => onNavigate('prev')}>
+          <Button icon={<StickerIcon src={stickers.actionPrev} alt="上一步" size="sm" />} size="small" onClick={() => onNavigate('prev')}>
             上一步
           </Button>
-          <Button icon={<RightOutlined />} size="small" onClick={() => onNavigate('next')}>
+          <Button icon={<StickerIcon src={stickers.actionNext} alt="下一步" size="sm" />} size="small" onClick={() => onNavigate('next')}>
             下一步
           </Button>
         </Space>
@@ -142,7 +134,7 @@ export default function NodeDrawer({ open, node, onClose, onNavigate }: NodeDraw
             <Button
               key={link.title}
               type="link"
-              icon={<LinkOutlined />}
+              icon={<StickerIcon src={stickers.actionLink} alt="关联链接" size="sm" />}
               style={{ padding: 0 }}
               href={link.url}
             >
@@ -161,22 +153,22 @@ export default function NodeDrawer({ open, node, onClose, onNavigate }: NodeDraw
         </Title>
         <Space wrap>
           {node.status === 'pending' && (
-            <Button type="primary" icon={<PlayCircleOutlined />}>
+            <Button type="primary" icon={<StickerIcon src={stickers.actionPlay} alt="开始执行" size="sm" />}>
               开始执行
             </Button>
           )}
           {node.status === 'running' && (
-            <Button danger icon={<ClockCircleOutlined />}>
+            <Button danger icon={<StickerIcon src={stickers.actionPause} alt="暂停" size="sm" />}>
               暂停
             </Button>
           )}
           {node.status === 'completed' && (
-            <Button icon={<ReloadOutlined />}>
+            <Button icon={<StickerIcon src={stickers.actionRetry} alt="重新执行" size="sm" />}>
               重新执行
             </Button>
           )}
           {node.status === 'failed' && (
-            <Button type="primary" danger icon={<ReloadOutlined />}>
+            <Button type="primary" danger icon={<StickerIcon src={stickers.actionRetry} alt="重试" size="sm" />}>
               重试
             </Button>
           )}
