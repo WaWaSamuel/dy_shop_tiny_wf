@@ -217,3 +217,50 @@ export interface ApiResponse<T = unknown> {
   message: string;
   data: T;
 }
+
+export interface NewsDigestWindow {
+  start: string;
+  end: string;
+  timezone: string;
+  label: string;
+}
+
+export interface NewsTopic {
+  topic: string;
+  count: number;
+  sources: string[];
+}
+
+export interface NewsSource {
+  id: string;
+  name: string;
+  feedUrl: string;
+  homepageUrl?: string | null;
+  articleCount: number;
+  status: string;
+  lastError?: string | null;
+  fetchedAt?: string | null;
+}
+
+export interface NewsDigestItem {
+  id: string;
+  title: string;
+  sourceId: string;
+  sourceName: string;
+  url: string;
+  publishedAt: string;
+  summary: string;
+  highlights: string[];
+  excerpt: string;
+}
+
+export interface NewsDigest {
+  window: NewsDigestWindow;
+  refreshedAt: string;
+  totalSources: number;
+  totalArticles: number;
+  topics: NewsTopic[];
+  sources: NewsSource[];
+  items: NewsDigestItem[];
+  notes: string[];
+}

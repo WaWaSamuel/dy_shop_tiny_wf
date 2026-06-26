@@ -34,6 +34,7 @@ celery_app.conf.update(
         "app.tasks.creative_tasks.*": {"queue": "creative"},
         "app.tasks.sync_tasks.*": {"queue": "sync"},
         "app.tasks.notification_tasks.*": {"queue": "notification"},
+        "app.tasks.news_tasks.*": {"queue": "sync"},
     },
 
     # Task time limits
@@ -69,6 +70,11 @@ celery_app.conf.update(
             "schedule": crontab(hour=2, minute=0),  # 2:00 AM daily
             "options": {"queue": "sync"},
         },
+        "refresh-news-digest-daily": {
+            "task": "app.tasks.news_tasks.refresh_news_digest",
+            "schedule": crontab(hour=9, minute=5),  # 09:05 daily, covers 21:00-09:00 window
+            "options": {"queue": "sync"},
+        },
     },
 )
 
@@ -78,5 +84,6 @@ celery_app.autodiscover_tasks(
         "app.tasks.creative_tasks",
         "app.tasks.sync_tasks",
         "app.tasks.notification_tasks",
+        "app.tasks.news_tasks",
     ]
 )

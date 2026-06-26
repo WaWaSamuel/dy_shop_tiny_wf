@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import ProjectLayout from '@/layouts/ProjectLayout';
 import Dashboard from '@/pages/Dashboard';
+import NewsAggregator from '@/pages/news/NewsAggregator';
 import Overview from '@/pages/ecommerce/Overview';
 import Products from '@/pages/ecommerce/Products';
 import ProductFlow from '@/pages/ecommerce/ProductFlow';
@@ -13,6 +14,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<DashboardLayout />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/project/news" element={<NewsAggregator />} />
       </Route>
       <Route path="/project/ecommerce" element={<ProjectLayout />}>
         <Route index element={<Navigate to="overview" replace />} />

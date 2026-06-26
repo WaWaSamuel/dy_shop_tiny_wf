@@ -69,6 +69,18 @@ class Settings(BaseSettings):
     FEISHU_BOT_DEFAULT_CHAT_ID: str = ""
     FEISHU_BOT_PUSH_TOKEN: str = ""
 
+    # News aggregation
+    NEWS_SOURCE_CONFIG: str = ""
+    NEWS_DIGEST_TIMEZONE: str = "Asia/Shanghai"
+    NEWS_DIGEST_WINDOW_START_HOUR: int = 21
+    NEWS_DIGEST_WINDOW_END_HOUR: int = 9
+    NEWS_DIGEST_MAX_ARTICLES: int = 24
+    NEWS_DIGEST_MAX_ITEMS_PER_SOURCE: int = 8
+    NEWS_DIGEST_REQUEST_TIMEOUT_SECONDS: int = 20
+    NEWS_DIGEST_CACHE_TTL_SECONDS: int = 43200
+    NEWS_DIGEST_USER_AGENT: str = "DYShop-NewsAggregator/1.0"
+    NEWS_DIGEST_ARTICLE_TEXT_LIMIT: int = 1600
+
     @property
     def database_read_url(self) -> str:
         """Return read replica URL or fall back to primary."""
