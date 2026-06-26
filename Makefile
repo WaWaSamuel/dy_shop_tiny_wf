@@ -1,7 +1,7 @@
 # Personal Studio - Makefile
 # 常用命令快捷方式
 
-.PHONY: help start stop clean logs migrate test lint
+.PHONY: help start stop clean logs migrate test lint install-bridge dev-bridge
 
 help: ## 显示帮助
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -9,13 +9,13 @@ help: ## 显示帮助
 # ==================== Docker 启动 ====================
 
 start: ## Docker 启动所有服务
-	@chmod +x start.sh && ./start.sh dev
+	@chmod +x run.sh stop.sh && ./run.sh dev
 
 stop: ## 停止所有服务
-	docker compose down
+	./run.sh stop
 
 clean: ## 清理所有数据 (慎用)
-	docker compose down -v
+	./run.sh clean
 
 restart: ## 重启所有服务
 	docker compose restart
@@ -51,6 +51,13 @@ dev-backend: ## 启动后端 (开发模式)
 
 dev-frontend: ## 启动前端 (开发模式)
 	cd frontend && npm run dev
+
+install-bridge: ## 安装宿主机 bridge 依赖
+	python3 -m venv .venv-bridge
+	./.venv-bridge/bin/pip install -r bridge/requirements.txt
+
+dev-bridge: ## 启动宿主机 bridge
+	./.venv-bridge/bin/uvicorn bridge.app:app --host 127.0.0.1 --port 8765 --reload
 
 # ==================== 数据库 ====================
 

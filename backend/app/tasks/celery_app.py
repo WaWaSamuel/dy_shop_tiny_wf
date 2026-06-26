@@ -35,6 +35,7 @@ celery_app.conf.update(
         "app.tasks.sync_tasks.*": {"queue": "sync"},
         "app.tasks.notification_tasks.*": {"queue": "notification"},
         "app.tasks.news_tasks.*": {"queue": "sync"},
+        "app.tasks.session_tasks.*": {"queue": "sync"},
     },
 
     # Task time limits
@@ -75,6 +76,11 @@ celery_app.conf.update(
             "schedule": crontab(hour=9, minute=5),  # 09:05 daily, covers 21:00-09:00 window
             "options": {"queue": "sync"},
         },
+        "refresh-session-sources-daily": {
+            "task": "app.tasks.session_tasks.refresh_session_sources",
+            "schedule": crontab(hour=9, minute=0),  # 09:00 daily preflight check
+            "options": {"queue": "sync"},
+        },
     },
 )
 
@@ -85,5 +91,6 @@ celery_app.autodiscover_tasks(
         "app.tasks.sync_tasks",
         "app.tasks.notification_tasks",
         "app.tasks.news_tasks",
+        "app.tasks.session_tasks",
     ]
 )

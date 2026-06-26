@@ -75,8 +75,8 @@ cd /Users/bytedance/StickerProductive/DYShop
 给启动脚本执行权限并启动：
 
 ```bash
-chmod +x start.sh
-./start.sh dev
+chmod +x run.sh stop.sh
+./run.sh dev
 ```
 
 也可以使用 `Makefile`：
@@ -91,7 +91,8 @@ make start
 2. 拉取基础镜像
 3. 构建前后端镜像
 4. 启动数据库、缓存、后端、前端和 Celery 服务
-5. 轮询 `http://localhost:8000/health`，确认后端可用
+5. 启动宿主机 Session Bridge
+6. 轮询 `http://localhost:8000/health`，确认后端可用
 
 首次构建时间会明显更长，属于正常现象。
 
@@ -100,6 +101,7 @@ make start
 - 前端页面：`http://localhost:5174`
 - 后端 API：`http://localhost:8000`
 - API 文档：`http://localhost:8000/docs`
+- Session Bridge：`http://127.0.0.1:8765`
 - PostgreSQL：`localhost:5432`
 - Redis：`localhost:6379`
 
@@ -108,31 +110,37 @@ make start
 启动全部服务：
 
 ```bash
-./start.sh dev
+./run.sh dev
 ```
 
 查看全部日志：
 
 ```bash
-./start.sh logs
+./run.sh logs
 ```
 
 查看后端日志：
 
 ```bash
-./start.sh logs backend
+./run.sh logs backend
+```
+
+查看 bridge 日志：
+
+```bash
+./run.sh bridge-logs
 ```
 
 停止服务：
 
 ```bash
-./start.sh stop
+./run.sh stop
 ```
 
 清理服务和数据卷：
 
 ```bash
-./start.sh clean
+./run.sh clean
 ```
 
 直接使用 Compose：
@@ -254,7 +262,7 @@ Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
 说明 Docker Desktop 还没启动完成。请先打开 Docker Desktop，并等待状态变为 Running，再重新执行：
 
 ```bash
-./start.sh dev
+./run.sh dev
 ```
 
 ### 7.3 端口被占用
@@ -278,7 +286,7 @@ Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
 
 1. 安装 Docker Desktop for Mac
 2. 打开 Docker Desktop，确认已运行
-3. 在项目根目录执行 `./start.sh dev`
+3. 在项目根目录执行 `./run.sh dev`
 4. 打开 `http://localhost:5174`
 
 这也是当前项目最直接、维护成本最低的启动方式。

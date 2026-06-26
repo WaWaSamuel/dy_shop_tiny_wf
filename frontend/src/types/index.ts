@@ -264,3 +264,34 @@ export interface NewsDigest {
   items: NewsDigestItem[];
   notes: string[];
 }
+
+export interface SessionSourceProbeDetail {
+  displayName?: string | null;
+  userVid?: string | null;
+}
+
+export interface SessionSource {
+  id: string;
+  name: string;
+  description: string;
+  homepageUrl: string;
+  loginUrl: string;
+  domainPatterns: string[];
+  projectKeys: string[];
+  authKind: string;
+  probeKind: string;
+  probePath: string;
+  cookieKey: string;
+  enabled: boolean;
+  status: 'healthy' | 'expired' | 'unknown';
+  severity: 'success' | 'warning' | 'danger';
+  healthy: boolean;
+  message: string;
+  lastCheckedAt?: string | null;
+  lastSuccessAt?: string | null;
+  lastError?: string | null;
+  supportsBrowserSync: boolean;
+  hasStoredCookie: boolean;
+  isStale: boolean;
+  probeDetail: SessionSourceProbeDetail;
+}

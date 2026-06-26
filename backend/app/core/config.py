@@ -81,6 +81,31 @@ class Settings(BaseSettings):
     NEWS_DIGEST_USER_AGENT: str = "DYShop-NewsAggregator/1.0"
     NEWS_DIGEST_ARTICLE_TEXT_LIMIT: int = 1600
 
+    # WeRead digest
+    WEREAD_DIGEST_TIMEZONE: str = "Asia/Shanghai"
+    WEREAD_DIGEST_WINDOW_END_HOUR: int = 9
+    WEREAD_SOURCE_CONFIG: str = ""
+    WEREAD_MAX_ARTICLES: int = 20
+    WEREAD_MAX_ITEMS_PER_SOURCE: int = 8
+    WEREAD_REQUEST_TIMEOUT_SECONDS: int = 20
+    WEREAD_ARTICLE_TEXT_LIMIT: int = 2000
+    WEREAD_MARKDOWN_OUTPUT_DIR: str = ""
+    WEREAD_COOKIE_HEADER: str = ""
+    WEREAD_COOKIE_CACHE_TTL_SECONDS: int = 1800
+    WEREAD_CHROME_PROFILE_NAME: str = "Default"
+    WEREAD_CHROME_COOKIES_PATH: str = ""
+    WEREAD_CHROME_SAFE_STORAGE_NAME: str = "Chrome Safe Storage"
+
+    # Browser session bridge
+    BROWSER_CHROME_PROFILE_NAME: str = "Default"
+    BROWSER_CHROME_COOKIES_PATH: str = ""
+    BROWSER_CHROME_SAFE_STORAGE_NAME: str = "Chrome Safe Storage"
+    SESSION_SOURCE_REQUEST_TIMEOUT_SECONDS: int = 15
+    SESSION_SOURCE_STATUS_STALE_SECONDS: int = 43200
+    SESSION_BRIDGE_ENABLED: bool = True
+    SESSION_BRIDGE_BASE_URL: str = "http://host.docker.internal:8765"
+    SESSION_BRIDGE_TIMEOUT_SECONDS: int = 20
+
     @property
     def database_read_url(self) -> str:
         """Return read replica URL or fall back to primary."""

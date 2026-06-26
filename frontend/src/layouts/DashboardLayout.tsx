@@ -14,11 +14,9 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <Layout className="dashboard-shell" style={{ minHeight: '100vh' }}>
+    <Layout className="dashboard-shell">
       <Content className="content-shell">
-        <div className="page-shell">
-          <Outlet />
-        </div>
+        <Outlet />
       </Content>
       <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
         <Button

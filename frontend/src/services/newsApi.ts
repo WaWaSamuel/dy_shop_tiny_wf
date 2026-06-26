@@ -96,3 +96,30 @@ export const getNewsSources = async (): Promise<NewsSource[]> => {
   const response = await api.get('/v1/news/sources') as NewsDigestApiResponse['sources'];
   return response.map(mapSource);
 };
+
+interface NewsDigestPushItemRequest {
+  title: string;
+  url?: string;
+  summary?: string;
+}
+
+interface NewsDigestPushRequest {
+  title: string;
+  content?: string;
+  items: NewsDigestPushItemRequest[];
+  open_id?: string;
+  chat_id?: string;
+}
+
+interface NewsDigestPushResponse {
+  success: boolean;
+  receive_id_type: string;
+  receive_id: string;
+  target_hint: string;
+  message_id?: string | null;
+}
+
+export const pushNewsDigest = async (payload: NewsDigestPushRequest): Promise<NewsDigestPushResponse> => {
+  const response = await api.post('/v1/news/digest/push', payload) as NewsDigestPushResponse;
+  return response;
+};
