@@ -14,6 +14,7 @@ import {
   Image,
   Timeline,
   Tooltip,
+  Alert,
 } from 'antd';
 import StickerIcon from '@/components/common/StickerIcon';
 import { stickers } from '@/assets/stickerPack';
@@ -88,6 +89,14 @@ export default function CreativeStudio() {
 
   return (
     <div>
+      <Card className="surface-card" style={{ marginBottom: 24 }}>
+        <Alert
+          type="info"
+          showIcon={false}
+          message="建议先在抖掌柜完成上架，再把货品 Excel 导入工作台；素材工坊负责为这些已确认货品补图、详情页和广告素材。"
+        />
+      </Card>
+
       <Row gutter={24}>
         {/* Left config panel */}
         <Col xs={24} lg={7}>
@@ -163,7 +172,7 @@ export default function CreativeStudio() {
 
               <Button
                 type="primary"
-                icon={<StickerIcon src={stickers.actionGenerate} alt="生成素材" size="sm" />}
+                icon={<StickerIcon src={stickers.actions.generate} alt="生成素材" size="sm" />}
                 block
                 size="large"
                 onClick={handleGenerate}
@@ -180,7 +189,7 @@ export default function CreativeStudio() {
             title="版本预览"
             extra={
               <Space>
-                <Tag icon={<StickerIcon src={stickers.actionImage} alt="版本预览" size="xs" />} color="blue">
+                <Tag icon={<StickerIcon src={stickers.actions.image} alt="版本预览" size="xs" />} color="blue">
                   {versions.length} 个版本
                 </Tag>
               </Space>
@@ -208,7 +217,7 @@ export default function CreativeStudio() {
                           <Button
                             type="text"
                             size="small"
-                            icon={<StickerIcon src={stickers.actionStar} alt="收藏" size="sm" />}
+                            icon={<StickerIcon src={stickers.actions.star} alt="收藏" size="sm" />}
                             style={{ position: 'absolute', top: 4, right: 4 }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -238,7 +247,7 @@ export default function CreativeStudio() {
             title="生成历史"
             size="small"
             style={{ marginTop: 16 }}
-            extra={<StickerIcon src={stickers.actionHistory} alt="生成历史" size="sm" />}
+            extra={<StickerIcon src={stickers.actions.history} alt="生成历史" size="sm" />}
           >
             <Timeline
               mode="left"

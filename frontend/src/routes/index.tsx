@@ -7,7 +7,6 @@ import Products from '@/pages/ecommerce/Products';
 import ProductFlow from '@/pages/ecommerce/ProductFlow';
 import CreativeStudio from '@/pages/ecommerce/CreativeStudio';
 import Sourcing from '@/pages/ecommerce/Sourcing';
-import Orders from '@/pages/ecommerce/Orders';
 
 export function AppRoutes() {
   return (
@@ -22,7 +21,7 @@ export function AppRoutes() {
         <Route path="flow/:id" element={<ProductFlow />} />
         <Route path="creative-studio" element={<CreativeStudio />} />
         <Route path="sourcing" element={<Sourcing />} />
-        <Route path="orders" element={<Orders />} />
+        <Route path="orders" element={<Navigate to="/project/ecommerce/overview" replace />} />
       </Route>
     </Routes>
   );

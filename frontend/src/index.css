@@ -61,7 +61,7 @@ a {
   inset: 0;
   background:
     linear-gradient(rgba(255, 252, 253, 0.2), rgba(255, 252, 253, 0.2)),
-    url('../assets/dyshop_sticker_wallpaper_2k.png') no-repeat center / cover;
+    url('../assets/wallpapers/dyshop_wallpaper_chiikawa_board_2k.png') no-repeat center / cover;
   opacity: 0.2;
   pointer-events: none;
   z-index: 0;
@@ -255,7 +255,7 @@ a {
   border-radius: 40px;
   background:
     linear-gradient(180deg, rgba(255, 252, 253, 0.08), rgba(255, 250, 252, 0.04) 28%, rgba(255, 248, 251, 0.14) 68%, rgba(255, 248, 251, 0.42)),
-    url('../assets/dyshop_sticker_wallpaper_2k.png') no-repeat center 34% / cover;
+    url('../assets/wallpapers/dyshop_wallpaper_chiikawa_board_2k.png') no-repeat center 34% / cover;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.48),
     0 36px 72px rgba(220, 182, 201, 0.12);
@@ -317,6 +317,12 @@ a {
   display: flex;
   align-items: flex-end;
   padding: clamp(180px, 32vh, 320px) 10px 0;
+}
+
+.ops-kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .dashboard-entry-grid {
@@ -712,7 +718,7 @@ a {
 
 .project-sider-sticker-cluster {
   position: relative;
-  height: 112px;
+  height: 132px;
   margin: 8px 12px 14px;
   pointer-events: none;
 }
@@ -738,6 +744,16 @@ a {
   width: 74px;
   height: 74px;
   transform: rotate(6deg);
+}
+
+.project-sider-note {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  color: rgba(125, 95, 109, 0.76);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .sticker-icon {
@@ -996,6 +1012,11 @@ a {
     right: 0;
     bottom: 30px;
     padding: clamp(132px, 22vh, 220px) 0 0;
+  }
+
+  .ops-kv-row {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .project-card-title {

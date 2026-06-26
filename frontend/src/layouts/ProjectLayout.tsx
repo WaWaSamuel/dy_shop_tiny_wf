@@ -7,17 +7,11 @@ import { stickers } from '@/assets/stickerPack';
 const { Sider, Content } = Layout;
 
 const menuItems = [
-  { key: 'overview', icon: <StickerIcon src={stickers.menuOverview} alt="数据看板" size="sm" />, label: '数据看板' },
-  { key: 'sourcing', icon: <StickerIcon src={stickers.menuSourcing} alt="选品中心" size="sm" />, label: '选品中心' },
-  { key: 'products', icon: <StickerIcon src={stickers.menuSupply} alt="货源管理" size="sm" />, label: '货源管理' },
-  { key: 'creative-studio', icon: <StickerIcon src={stickers.menuCreative} alt="广告资产" size="sm" />, label: '广告资产 / 资产工作台' },
-  { key: 'products', icon: <StickerIcon src={stickers.menuProduct} alt="商品管理" size="sm" />, label: '商品管理' },
-  { key: 'orders', icon: <StickerIcon src={stickers.menuOrders} alt="订单与物流" size="sm" />, label: '订单与物流' },
-  { key: 'after-sales', icon: <StickerIcon src={stickers.menuService} alt="售后服务" size="sm" />, label: '售后服务' },
-  { key: 'finance', icon: <StickerIcon src={stickers.menuFinance} alt="财务中心" size="sm" />, label: '财务中心' },
-  { key: 'analytics', icon: <StickerIcon src={stickers.menuAnalytics} alt="数据分析" size="sm" />, label: '数据分析' },
-  { key: 'flow/default', icon: <StickerIcon src={stickers.menuFlow} alt="商品全链路" size="sm" />, label: '商品全链路' },
-  { key: 'settings', icon: <StickerIcon src={stickers.menuSettings} alt="设置" size="sm" />, label: '设置' },
+  { key: 'overview', icon: <StickerIcon src={stickers.nav.overview} alt="数据看板" size="sm" />, label: '数据看板' },
+  { key: 'sourcing', icon: <StickerIcon src={stickers.nav.sourcing} alt="1688 选品" size="sm" />, label: '1688 选品' },
+  { key: 'products', icon: <StickerIcon src={stickers.nav.catalog} alt="抖掌柜货盘" size="sm" />, label: '抖掌柜货盘' },
+  { key: 'creative-studio', icon: <StickerIcon src={stickers.nav.creative} alt="素材工坊" size="sm" />, label: '素材工坊' },
+  { key: 'flow/default', icon: <StickerIcon src={stickers.nav.flow} alt="流程看板" size="sm" />, label: '流程看板' },
 ];
 
 export default function ProjectLayout() {
@@ -25,7 +19,8 @@ export default function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentPath = location.pathname.split('/project/ecommerce/')[1] || 'overview';
+  const rawPath = location.pathname.split('/project/ecommerce/')[1] || 'overview';
+  const currentPath = rawPath.startsWith('flow/') ? 'flow/default' : rawPath;
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(`/project/ecommerce/${key}`);
@@ -60,7 +55,7 @@ export default function ProjectLayout() {
           {!collapsed && (
             <Space>
               <div className="brand-mark" style={{ width: 30, height: 30, borderRadius: 10 }}>
-                  <img className="brand-image" src={stickers.menuSupply} alt="电商工作台" />
+                  <img className="brand-image" src={stickers.brand.mark} alt="电商工作台" />
               </div>
               <div>
                 <Typography.Text strong style={{ color: 'var(--text-main)' }}>电商工作台</Typography.Text>
@@ -69,7 +64,7 @@ export default function ProjectLayout() {
           )}
           <Button
             type="text"
-            icon={<StickerIcon src={collapsed ? stickers.toggleOpen : stickers.toggleClose} alt="展开侧边栏" size="sm" />}
+            icon={<StickerIcon src={collapsed ? stickers.nav.toggleOpen : stickers.nav.toggleClose} alt="展开侧边栏" size="sm" />}
             onClick={() => setCollapsed(!collapsed)}
             size="small"
             style={{ color: 'var(--text-main)' }}
@@ -86,8 +81,13 @@ export default function ProjectLayout() {
         />
         {!collapsed && (
           <div className="project-sider-sticker-cluster" aria-hidden="true">
-            <img className="project-sider-sticker project-sider-sticker--a" src={stickers.siderStickerA} alt="" />
-            <img className="project-sider-sticker project-sider-sticker--b" src={stickers.siderStickerB} alt="" />
+            <img className="project-sider-sticker project-sider-sticker--a" src={stickers.decor.sidebarA} alt="" />
+            <img className="project-sider-sticker project-sider-sticker--b" src={stickers.decor.sidebarB} alt="" />
+            <div className="project-sider-note">
+              抖掌柜负责物流跟踪与抖店上架，
+              <br />
+              这里负责货盘读取与经营协同。
+            </div>
           </div>
         )}
       </Sider>
@@ -105,7 +105,7 @@ export default function ProjectLayout() {
           className="floating-corner-button floating-home-button"
           type="text"
           shape="circle"
-          icon={<StickerIcon src={stickers.homeButton} alt="返回主页" size="xl" className="floating-home-image" />}
+          icon={<StickerIcon src={stickers.nav.home} alt="返回主页" size="xl" className="floating-home-image" />}
           onClick={() => navigate('/')}
         />
       </Tooltip>

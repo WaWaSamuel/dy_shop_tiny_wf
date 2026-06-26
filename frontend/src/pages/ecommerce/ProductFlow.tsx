@@ -1,45 +1,86 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  useNodesState,
-  useEdgesState,
   type Node,
   type Edge,
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Typography, Card, Space } from 'antd';
+import { Typography, Card, Space, Row, Col, Tag, Button, Empty } from 'antd';
 import FlowNode from '@/components/flow/FlowNode';
 import NodeDrawer from '@/components/flow/NodeDrawer';
-import type { FlowNodeData } from '@/types';
+import type { FlowNodeData, ImportedCatalogItem, WorkflowAsset, WorkflowStageAsset } from '@/types';
+import { getStoredCatalog } from '@/services/douzhangguiCatalog';
+import { buildCatalogKey, buildWorkflowAssetFromCatalog, getStoredWorkflowAssets } from '@/services/workflowAssets';
+import StickerIcon from '@/components/common/StickerIcon';
+import { stickers } from '@/assets/stickerPack';
 
 const { Text } = Typography;
 
 const nodeTypes = { custom: FlowNode };
 
-const flowSteps: FlowNodeData[] = [
-  { id: '1', label: '选品发现', status: 'completed', timestamp: '2024-05-01 10:00', description: '通过数据分析发现潜力品类，筛选出高需求低竞争的商品。' },
-  { id: '2', label: '货源匹配', status: 'completed', timestamp: '2024-05-02 14:00', description: '在1688、拼多多等平台匹配优质供应商，比较价格和质量。' },
-  { id: '3', label: '成本核算', status: 'completed', timestamp: '2024-05-03 09:30', description: '计算商品成本、物流费、平台佣金、广告预算等全链路成本。' },
-  { id: '4', label: '样品确认', status: 'completed', timestamp: '2024-05-05 16:00', description: '下单样品，验证质量、尺寸、颜色等是否符合预期。' },
-  { id: '5', label: '素材生成', status: 'running', timestamp: '2024-05-07 11:00', description: 'AI 生成商品主图、视频脚本、详情页素材。' },
-  { id: '6', label: '素材审核', status: 'pending', timestamp: '', description: '人工审核 AI 生成的素材质量，确保合规。' },
-  { id: '7', label: '定价策略', status: 'pending', timestamp: '', description: '基于成本和市场竞品分析制定售价策略。' },
-  { id: '8', label: '商品上架', status: 'pending', timestamp: '', description: '将商品信息和素材上传到各销售平台。' },
-  { id: '9', label: '广告投放', status: 'pending', timestamp: '', description: '配置广告计划，设定投放预算和目标受众。' },
-  { id: '10', label: '订单产生', status: 'pending', timestamp: '', description: '用户下单购买，系统自动接收并处理订单。' },
-  { id: '11', label: '自动发货', status: 'pending', timestamp: '', description: '系统自动向供应商下采购单并安排发货。' },
-  { id: '12', label: '物流跟踪', status: 'pending', timestamp: '', description: '实时跟踪包裹运输状态，异常自动预警。' },
-  { id: '13', label: '签收确认', status: 'pending', timestamp: '', description: '买家签收后确认收货，触发资金结算。' },
-  { id: '14', label: '评价跟进', status: 'pending', timestamp: '', description: '自动邀请买家评价，监控差评并及时处理。' },
-  { id: '15', label: '售后处理', status: 'pending', timestamp: '', description: '处理退货退款、客诉等售后问题。' },
-  { id: '16', label: '数据归档', status: 'pending', timestamp: '', description: '归档全链路数据，生成经营分析报表。' },
+const demoCatalogItems: ImportedCatalogItem[] = [
+  {
+    id: 'hachiware 数码店::bt-ear-001::无线蓝牙耳机 tws 入耳式',
+    catalogKey: 'hachiware 数码店::bt-ear-001::无线蓝牙耳机 tws 入耳式',
+    workflowAssetId: 'wf:hachiware 数码店::bt-ear-001::无线蓝牙耳机 tws 入耳式',
+    name: '无线蓝牙耳机 TWS 入耳式',
+    sku: 'BT-EAR-001',
+    shopName: 'Hachiware 数码店',
+    category: '数码配件',
+    supplier: '深圳市通达电子有限公司',
+    source: '抖掌柜 Excel 示例',
+    price: 29.99,
+    cost: 8.5,
+    stock: 520,
+    statusText: '已上架',
+    listingStatus: 'active',
+    updatedAt: '2026-06-26 09:10',
+    raw: {},
+  },
+  {
+    id: 'usagi beauty::led-mir-002::led 智能化妆镜带灯',
+    catalogKey: 'usagi beauty::led-mir-002::led 智能化妆镜带灯',
+    workflowAssetId: 'wf:usagi beauty::led-mir-002::led 智能化妆镜带灯',
+    name: 'LED 智能化妆镜带灯',
+    sku: 'LED-MIR-002',
+    shopName: 'Usagi Beauty',
+    category: '美妆工具',
+    supplier: '义乌市美亮电器厂',
+    source: '抖掌柜 Excel 示例',
+    price: 15.99,
+    cost: 4.2,
+    stock: 380,
+    statusText: '待上架',
+    listingStatus: 'pending',
+    updatedAt: '2026-06-26 09:30',
+    raw: {},
+  },
 ];
 
-function buildNodes(steps: FlowNodeData[]): Node[] {
+function stageToNode(step: WorkflowStageAsset, index: number): FlowNodeData {
+  const warningCount =
+    step.logs.filter((log) => log.type === 'warning' || log.type === 'error').length;
+
+  return {
+    id: step.key,
+    label: step.label,
+    status: step.status,
+    timestamp: step.timestamp,
+    description: step.description,
+    logs: step.logs,
+    relatedLinks: step.relatedLinks,
+    metadata: step.metadata,
+    sequence: index + 1,
+    warningCount,
+  };
+}
+
+function buildNodes(steps: WorkflowStageAsset[]): Node[] {
   const cols = 4;
   const xGap = 280;
   const yGap = 140;
@@ -48,19 +89,19 @@ function buildNodes(steps: FlowNodeData[]): Node[] {
     const row = Math.floor(index / cols);
     const col = row % 2 === 0 ? index % cols : cols - 1 - (index % cols);
     return {
-      id: step.id,
+      id: step.key,
       type: 'custom',
       position: { x: col * xGap + 50, y: row * yGap + 50 },
-      data: step,
+      data: stageToNode(step, index),
     };
   });
 }
 
-function buildEdges(steps: FlowNodeData[]): Edge[] {
+function buildEdges(steps: WorkflowStageAsset[]): Edge[] {
   return steps.slice(0, -1).map((step, index) => ({
-    id: `e${step.id}-${steps[index + 1].id}`,
-    source: step.id,
-    target: steps[index + 1].id,
+    id: `e${step.key}-${steps[index + 1].key}`,
+    source: step.key,
+    target: steps[index + 1].key,
     animated: step.status === 'running',
     style: {
       stroke: step.status === 'completed' ? '#52c41a' : '#d9d9d9',
@@ -70,10 +111,42 @@ function buildEdges(steps: FlowNodeData[]): Edge[] {
 }
 
 export default function ProductFlow() {
-  const [nodes, , onNodesChange] = useNodesState(buildNodes(flowSteps));
-  const [edges, , onEdgesChange] = useEdgesState(buildEdges(flowSteps));
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const decodedId = useMemo(() => decodeURIComponent(id || ''), [id]);
+
+  const catalogItems = useMemo(() => {
+    const stored = getStoredCatalog();
+    return stored.length ? stored : demoCatalogItems;
+  }, []);
+
+  const workflowAssets = useMemo(() => {
+    const stored = getStoredWorkflowAssets();
+    return stored.length ? stored : catalogItems.map((item) => buildWorkflowAssetFromCatalog(item));
+  }, [catalogItems]);
+
+  const selectedCatalogItem = useMemo(() => {
+    const directMatch = catalogItems.find((item) => (item.catalogKey || buildCatalogKey(item)) === decodedId);
+    if (directMatch) return directMatch;
+    return catalogItems.find((item) => item.id === decodedId) || catalogItems[0] || null;
+  }, [catalogItems, decodedId]);
+
+  const selectedAsset = useMemo<WorkflowAsset | null>(() => {
+    if (!selectedCatalogItem) return null;
+    const catalogKey = selectedCatalogItem.catalogKey || buildCatalogKey(selectedCatalogItem);
+    return workflowAssets.find((asset) => asset.catalogKey === catalogKey) || buildWorkflowAssetFromCatalog(selectedCatalogItem);
+  }, [selectedCatalogItem, workflowAssets]);
+
+  const flowStages = selectedAsset?.stages || [];
+  const nodes = useMemo(() => buildNodes(flowStages), [flowStages]);
+  const edges = useMemo(() => buildEdges(flowStages), [flowStages]);
   const [selectedNode, setSelectedNode] = useState<FlowNodeData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedNode(null);
+    setDrawerOpen(false);
+  }, [selectedAsset?.id]);
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     const data = node.data as unknown as FlowNodeData;
@@ -84,13 +157,13 @@ export default function ProductFlow() {
   const navigateNode = useCallback(
     (direction: 'prev' | 'next') => {
       if (!selectedNode) return;
-      const currentIndex = flowSteps.findIndex((s) => s.id === selectedNode.id);
+      const currentIndex = flowStages.findIndex((s) => s.key === selectedNode.id);
       const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-      if (nextIndex >= 0 && nextIndex < flowSteps.length) {
-        setSelectedNode(flowSteps[nextIndex]);
+      if (nextIndex >= 0 && nextIndex < flowStages.length) {
+        setSelectedNode(stageToNode(flowStages[nextIndex], nextIndex));
       }
     },
-    [selectedNode]
+    [flowStages, selectedNode]
   );
 
   useEffect(() => {
@@ -108,44 +181,106 @@ export default function ProductFlow() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [drawerOpen, navigateNode]);
 
-  return (
-    <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-      <Card
-        style={{ flex: 1, overflow: 'hidden' }}
-        bodyStyle={{ padding: 0, height: '100%' }}
-      >
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={handleNodeClick}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
+  if (!selectedCatalogItem || !selectedAsset) {
+    return (
+      <Card className="surface-card">
+        <Empty
+          description="没有找到对应货品的工作流资产"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
-          <Background color="#f0f0f0" gap={20} />
-          <Controls />
-          <MiniMap
-            nodeStrokeColor="#1677ff"
-            nodeColor={(n) => {
-              const data = n.data as unknown as FlowNodeData;
-              if (data.status === 'completed') return '#52c41a';
-              if (data.status === 'running') return '#1677ff';
-              return '#d9d9d9';
-            }}
-          />
-          <Panel position="top-right">
-            <Card size="small" style={{ opacity: 0.9 }}>
-              <Space direction="vertical" size={2}>
-                <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a' }} /> <Text style={{ fontSize: 12 }}>已完成</Text></Space>
-                <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#1677ff' }} /> <Text style={{ fontSize: 12 }}>进行中</Text></Space>
-                <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#d9d9d9' }} /> <Text style={{ fontSize: 12 }}>待处理</Text></Space>
-              </Space>
-            </Card>
-          </Panel>
-        </ReactFlow>
+          <Button type="primary" onClick={() => navigate('/project/ecommerce/products')}>
+            返回货盘
+          </Button>
+        </Empty>
       </Card>
+    );
+  }
+
+  const completedCount = flowStages.filter((stage) => stage.status === 'completed').length;
+  const currentStageLabel = flowStages.find((stage) => stage.key === selectedAsset.currentStageKey)?.label || '未开始';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Card className="surface-card">
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} lg={15}>
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <Space size={[8, 8]} wrap>
+                <Tag color="blue">{selectedAsset.workflowName}</Tag>
+                <Tag color="default">{selectedAsset.workflowVersion}</Tag>
+                <Tag color={selectedCatalogItem.listingStatus === 'active' ? 'green' : 'orange'}>
+                  {selectedCatalogItem.statusText}
+                </Tag>
+              </Space>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>{selectedCatalogItem.name}</div>
+                <Text type="secondary">
+                  {selectedCatalogItem.shopName} · {selectedCatalogItem.sku} · {selectedCatalogItem.category}
+                </Text>
+              </div>
+              <Text type="secondary">{selectedAsset.summary}</Text>
+              <Space size={[8, 8]} wrap>
+                <Tag>当前节点：{currentStageLabel}</Tag>
+                <Tag>已完成：{completedCount}/{flowStages.length}</Tag>
+                <Tag>供应商：{selectedCatalogItem.supplier}</Tag>
+                <Tag>更新时间：{selectedCatalogItem.updatedAt}</Tag>
+              </Space>
+            </Space>
+          </Col>
+          <Col xs={24} lg={9}>
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <Button
+                  icon={<StickerIcon src={stickers.actions.prev} alt="返回货盘" size="sm" />}
+                onClick={() => navigate('/project/ecommerce/products')}
+              >
+                返回货盘
+              </Button>
+              <Text type="secondary">
+                这是一份和货品绑定的工作流资产。后续抖掌柜导入 list 时，通过 `catalogKey` 自动关联回来。
+              </Text>
+              <Text type="secondary">资产ID：{selectedAsset.id}</Text>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <div style={{ height: 'calc(100vh - 320px)', minHeight: 560, display: 'flex', flexDirection: 'column' }}>
+        <Card style={{ flex: 1, overflow: 'hidden' }} bodyStyle={{ padding: 0, height: '100%' }}>
+          <ReactFlow
+            key={selectedAsset.id}
+            nodes={nodes}
+            edges={edges}
+            onNodeClick={handleNodeClick}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+          >
+            <Background color="#f0f0f0" gap={20} />
+            <Controls />
+            <MiniMap
+              nodeStrokeColor="#1677ff"
+              nodeColor={(n) => {
+                const data = n.data as unknown as FlowNodeData;
+                if (data.status === 'completed') return '#52c41a';
+                if (data.status === 'running') return '#1677ff';
+                if (data.status === 'failed') return '#ff4d4f';
+                return '#d9d9d9';
+              }}
+            />
+            <Panel position="top-right">
+              <Card size="small" style={{ opacity: 0.96 }}>
+                <Space direction="vertical" size={4}>
+                  <Text style={{ fontSize: 12 }}>当前货品工作流</Text>
+                  <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a' }} /> <Text style={{ fontSize: 12 }}>已完成</Text></Space>
+                  <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#1677ff' }} /> <Text style={{ fontSize: 12 }}>进行中</Text></Space>
+                  <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#d9d9d9' }} /> <Text style={{ fontSize: 12 }}>待处理</Text></Space>
+                  <Space><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff4d4f' }} /> <Text style={{ fontSize: 12 }}>失败</Text></Space>
+                </Space>
+              </Card>
+            </Panel>
+          </ReactFlow>
+        </Card>
+      </div>
 
       <NodeDrawer
         open={drawerOpen}

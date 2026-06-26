@@ -8,9 +8,9 @@ const { Content } = Layout;
 
 export default function DashboardLayout() {
   const userMenuItems: MenuProps['items'] = [
-    { key: 'settings', icon: <StickerIcon src={stickers.menuSettings} alt="设置" size="sm" />, label: '设置' },
+    { key: 'settings', icon: <StickerIcon src={stickers.actions.filter} alt="设置" size="sm" />, label: '设置' },
     { type: 'divider' },
-    { key: 'logout', icon: <StickerIcon src={stickers.menuLogout} alt="退出登录" size="sm" />, label: '退出登录' },
+    { key: 'logout', icon: <StickerIcon src={stickers.brand.logout} alt="退出登录" size="sm" />, label: '退出登录' },
   ];
 
   return (
@@ -25,7 +25,7 @@ export default function DashboardLayout() {
           className="floating-corner-button floating-profile-button"
           type="text"
           shape="circle"
-          icon={<StickerIcon src={stickers.profileButton} alt="个人中心" size="xl" />}
+          icon={<StickerIcon src={stickers.brand.profile} alt="个人中心" size="xl" />}
         />
       </Dropdown>
     </Layout>

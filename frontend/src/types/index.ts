@@ -26,6 +26,27 @@ export interface ProductVariant {
   attributes: Record<string, string>;
 }
 
+export interface ImportedCatalogItem {
+  id: string;
+  catalogKey?: string;
+  externalProductId?: string;
+  workflowAssetId?: string;
+  name: string;
+  sku: string;
+  shopName: string;
+  category: string;
+  supplier: string;
+  source: string;
+  price: number | null;
+  cost: number | null;
+  stock: number | null;
+  statusText: string;
+  listingStatus: 'active' | 'pending' | 'inactive' | 'unknown';
+  updatedAt: string;
+  link?: string;
+  raw: Record<string, string>;
+}
+
 // Order
 export interface Order {
   id: string;
@@ -54,6 +75,8 @@ export interface FlowNodeData extends Record<string, unknown> {
   logs?: FlowLog[];
   relatedLinks?: RelatedLink[];
   metadata?: Record<string, unknown>;
+  sequence?: number;
+  warningCount?: number;
 }
 
 export interface FlowLog {
@@ -67,6 +90,62 @@ export interface RelatedLink {
   title: string;
   url: string;
   type?: string;
+}
+
+export type WorkflowStageStatus = 'completed' | 'running' | 'pending' | 'failed';
+
+export type WorkflowStageKey =
+  | 'candidate_discovery'
+  | 'candidate_im_confirm'
+  | 'supplier_lookup'
+  | 'supplier_im_confirm'
+  | 'product_info_collect'
+  | 'creative_prepare'
+  | 'douyin_listing'
+  | 'workflow_archive'
+  | 'douzhanggui_bind';
+
+export interface WorkflowStageAsset {
+  key: WorkflowStageKey;
+  label: string;
+  status: WorkflowStageStatus;
+  timestamp: string;
+  description: string;
+  logs: FlowLog[];
+  relatedLinks: RelatedLink[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface WorkflowProductSnapshot {
+  catalogKey: string;
+  externalProductId?: string;
+  name: string;
+  sku: string;
+  shopName: string;
+  category: string;
+  supplier: string;
+  source: string;
+  price: number | null;
+  cost: number | null;
+  stock: number | null;
+  listingStatus: ImportedCatalogItem['listingStatus'];
+  statusText: string;
+  updatedAt: string;
+  link?: string;
+}
+
+export interface WorkflowAsset {
+  id: string;
+  catalogKey: string;
+  workflowName: string;
+  workflowVersion: string;
+  createdAt: string;
+  updatedAt: string;
+  currentStageKey: WorkflowStageKey;
+  productSnapshot: WorkflowProductSnapshot;
+  stages: WorkflowStageAsset[];
+  tags: string[];
+  summary: string;
 }
 
 // Creative Asset

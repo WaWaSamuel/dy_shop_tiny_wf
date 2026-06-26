@@ -12,25 +12,25 @@ const statusStyles: Record<string, { bg: string; border: string; color: string; 
     bg: '#f6ffed',
     border: '#b7eb8f',
     color: '#52c41a',
-    icon: <StickerIcon src={stickers.statusCompleted} alt="已完成" size="sm" />,
+    icon: <StickerIcon src={stickers.status.completed} alt="已完成" size="sm" />,
   },
   running: {
     bg: '#e6f4ff',
     border: '#91caff',
     color: '#1677ff',
-    icon: <StickerIcon src={stickers.statusRunning} alt="进行中" size="sm" />,
+    icon: <StickerIcon src={stickers.status.running} alt="进行中" size="sm" />,
   },
   pending: {
     bg: '#fafafa',
     border: '#d9d9d9',
     color: '#999',
-    icon: <StickerIcon src={stickers.statusPending} alt="待处理" size="sm" />,
+    icon: <StickerIcon src={stickers.status.pending} alt="待处理" size="sm" />,
   },
   failed: {
     bg: '#fff2f0',
     border: '#ffccc7',
     color: '#ff4d4f',
-    icon: <StickerIcon src={stickers.statusFailed} alt="失败" size="sm" />,
+    icon: <StickerIcon src={stickers.status.failed} alt="失败" size="sm" />,
   },
 };
 
@@ -55,9 +55,14 @@ function FlowNode({ data }: NodeProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {style.icon}
         <Text strong style={{ color: style.color, fontSize: 13 }}>
-          {nodeData.label}
+          {nodeData.sequence ? `${nodeData.sequence}. ` : ''}{nodeData.label}
         </Text>
       </div>
+      {nodeData.warningCount ? (
+        <Text style={{ fontSize: 10, display: 'block', marginTop: 4, color: '#fa8c16' }}>
+          {nodeData.warningCount} 条异常提示
+        </Text>
+      ) : null}
       {nodeData.timestamp && (
         <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
           {nodeData.timestamp}

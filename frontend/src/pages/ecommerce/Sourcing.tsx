@@ -10,6 +10,7 @@ import {
   Space,
   Avatar,
   Rate,
+  Alert,
 } from 'antd';
 import SourceBadge from '@/components/common/SourceBadge';
 import StickerIcon from '@/components/common/StickerIcon';
@@ -126,10 +127,18 @@ export default function Sourcing() {
 
   return (
     <div>
+      <Card className="surface-card" style={{ marginBottom: 24 }}>
+        <Alert
+          type="info"
+          showIcon={false}
+          message="这里保留 1688 选品和供货对比。真正的 1688 物流跟踪、抖店上架动作在抖掌柜完成，完成后再把货品 Excel 导回工作台。"
+        />
+      </Card>
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
         <Input
           placeholder="搜索商品..."
-          prefix={<StickerIcon src={stickers.actionSearch} alt="搜索商品" size="sm" />}
+          prefix={<StickerIcon src={stickers.actions.search} alt="搜索商品" size="sm" />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           allowClear
@@ -188,7 +197,7 @@ export default function Sourcing() {
                     </Space>
                     <div style={{ marginTop: 8 }}>
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        <StickerIcon src={stickers.actionSupplier} alt="供应商" size="xs" /> {product.supplier}
+                        <StickerIcon src={stickers.actions.supplier} alt="供应商" size="xs" /> {product.supplier}
                       </Text>
                     </div>
                   </div>
