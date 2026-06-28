@@ -1,0 +1,32 @@
+version: 1
+catalog_name: DYShop TRAE Runtime Tool Catalog
+description: >
+  统一登记当前项目里可被 skill 显式调用的底层 runtime / cmd tools。
+
+tools:
+  - id: im.send_card
+    file: .trae/tools/im-send-card/TOOL.md
+    status: active
+    tool_type: cmd_runtime_tool
+    backend_entry: POST /api/v1/tools/invoke
+    invoke_name: im.send_card
+    implementation: backend/app/tools/runtime_tools.py
+    used_by_skills:
+      - human-gate-approval
+      - site-session-recovery
+      - weread-wechat-digest
+    primary_inputs: [title, lines, template, open_id, chat_id]
+    primary_outputs: [receive_id_type, receive_id, target_hint, message_id]
+
+  - id: agents.log
+    file: .trae/tools/agents-log/TOOL.md
+    status: active
+    tool_type: cmd_tool
+    command_entry: python3 .trae/tools/agents-log/agents_log.py --payload '<json>'
+    invoke_name: agents.log
+    implementation: .trae/tools/agents-log/agents_log.py
+    local_store: .trae/runtime/agents-log.jsonl
+    used_by_skills:
+      - agents-log
+    primary_inputs: [event_type, from_agent, to_agent, from_workflow, to_workflow, trigger, reason, handoff_summary, run_id]
+    primary_outputs: [ok, log_path, local_log_id, run_id, created_at, from_agent, to_agent, event_type]

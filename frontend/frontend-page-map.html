@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>当前前端页面结构图</title>
+  <style>
+    :root {
+      --bg: #fff8fb;
+      --panel: rgba(255, 255, 255, 0.84);
+      --panel-strong: #ffffff;
+      --line: #f1c9d7;
+      --text: #3c3040;
+      --muted: #7b6b78;
+      --pink: #ff8fba;
+      --pink-soft: #ffe3ee;
+      --blue: #86baff;
+      --blue-soft: #eaf3ff;
+      --green: #7dcf97;
+      --green-soft: #ebfff1;
+      --gold: #f3bc67;
+      --gold-soft: #fff4df;
+      --danger: #ff7b7b;
+      --danger-soft: #fff1f1;
+      --shadow: 0 18px 40px rgba(244, 163, 191, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffe6f1 0, transparent 34%),
+        radial-gradient(circle at top right, #e9f4ff 0, transparent 28%),
+        linear-gradient(180deg, #fffafd 0%, #fff7f9 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,244,249,.92));
+      border: 1px solid rgba(241, 201, 215, .9);
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--pink-soft);
+      color: #b84677;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: 36px;
+      line-height: 1.15;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+      max-width: 920px;
+    }
+
+    .meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 28px;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 22px;
+    }
+
+    .section-note {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .topology {
+      display: grid;
+      gap: 16px;
+    }
+
+    .node {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .node.root {
+      background: linear-gradient(135deg, #fff, #fff6fa);
+    }
+
+    .node.layout-dashboard {
+      background: linear-gradient(135deg, var(--pink-soft), #fff);
+    }
+
+    .node.layout-project {
+      background: linear-gradient(135deg, var(--blue-soft), #fff);
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .node-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .route {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.8);
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px dashed var(--line);
+      display: inline-block;
+      margin-top: 8px;
+    }
+
+    .desc {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 8px 0 0;
+      font-size: 14px;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 14px;
+      color: #c7859f;
+      font-weight: 700;
+    }
+
+    .children {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .children.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .page {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 180px;
+    }
+
+    .page.dashboard { border-top: 5px solid var(--pink); }
+    .page.project { border-top: 5px solid var(--blue); }
+    .page.flow { border-top: 5px solid var(--green); }
+    .page.warning { border-top: 5px solid var(--gold); background: var(--gold-soft); }
+    .page.danger { border-top: 5px solid var(--danger); background: var(--danger-soft); }
+
+    .page h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .page p {
+      margin: 8px 0 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #6b5966;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .mermaid {
+      margin-top: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      overflow: auto;
+      box-shadow: var(--shadow);
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #5a4c57;
+    }
+
+    @media (max-width: 1100px) {
+      .children,
+      .children.two,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      h1 { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">当前前端页面情况</div>
+      <h1>DYShop 前端页面结构图</h1>
+      <p class="sub">
+        这是根据当前项目中的真实路由、布局和页面组件整理出来的页面全景图。
+        结论上，这个项目目前是一个“个人结果展示台”，核心由主页、资讯结果、执行记录中心，以及一个包含多个子页的电商工作台组成。
+      </p>
+      <div class="meta">
+        <span class="chip">框架：Vite + React + TypeScript + Ant Design</span>
+        <span class="chip">路由：React Router v6</span>
+        <span class="chip">主视觉：贴纸风 / 卡片化 / 看板式信息组织</span>
+        <span class="chip">真实可访问主页面：7 个</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">页面拓扑图</h2>
+      <p class="section-note">按真实路由关系展开，包含入口页、布局容器、子页面，以及代码中存在但当前未接入的部分。</p>
+
+      <div class="topology">
+        <div class="node root">
+          <div class="node-header">
+            <div>
+              <div class="node-title">App Shell</div>
+              <div class="route">`src/App.tsx` + `src/routes/index.tsx`</div>
+            </div>
+            <span class="chip">全局背景 + 贴纸装饰</span>
+          </div>
+          <p class="desc">所有页面都包在统一壳层里，页面主体通过路由切换。顶层分成两条大支路：`DashboardLayout` 和 `ProjectLayout`。</p>
+        </div>
+
+        <div class="arrow">↓ 主页与独立页分支</div>
+        <div class="node layout-dashboard">
+          <div class="node-header">
+            <div>
+              <div class="node-title">DashboardLayout</div>
+              <div class="route">`/`、`/project/news`、`/project/runtime`</div>
+            </div>
+            <span class="chip">无侧边栏，右下角个人入口</span>
+          </div>
+          <div class="children">
+            <div class="page dashboard">
+              <h3>个人结果展示台</h3>
+              <div class="route">`/`</div>
+              <p>首页总入口。以项目卡片方式进入不同结果模块，并展示宿主登录态、主入口状态和快捷概览。</p>
+              <div class="tags">
+                <span class="tag">项目卡片导航</span>
+                <span class="tag">登录态监控</span>
+                <span class="tag">首页总览</span>
+              </div>
+            </div>
+
+            <div class="page dashboard">
+              <h3>资讯聚合引擎</h3>
+              <div class="route">`/project/news`</div>
+              <p>资讯日报结果页。展示信息源状态、热点提炼、文章流、推送记录，并支持推送到飞书。</p>
+              <div class="tags">
+                <span class="tag">资讯结果展示</span>
+                <span class="tag">热点聚合</span>
+                <span class="tag">文章详情抽屉</span>
+              </div>
+            </div>
+
+            <div class="page dashboard">
+              <h3>执行记录中心</h3>
+              <div class="route">`/project/runtime`</div>
+              <p>查看 agent、workflow、skill 的目录和执行记录，包含筛选、统计卡片、能力表格和最近记录列表。</p>
+              <div class="tags">
+                <span class="tag">日志中心</span>
+                <span class="tag">能力目录</span>
+                <span class="tag">记录筛选</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow">↓ 电商工作台分支</div>
+        <div class="node layout-project">
+          <div class="node-header">
+            <div>
+              <div class="node-title">ProjectLayout</div>
+              <div class="route">`/project/ecommerce/*`</div>
+            </div>
+            <span class="chip">固定左侧栏 + 工作台内容区</span>
+          </div>
+          <p class="desc">这是项目最完整的一条业务线，左侧栏固定挂载 5 个子入口：总览、选品、货盘、素材工坊、流程看板。</p>
+          <div class="children">
+            <div class="page project">
+              <h3>电商结果总览</h3>
+              <div class="route">`/project/ecommerce/overview`</div>
+              <p>电商模块的主入口页，强调“先看结果，再决定下一步”。展示结果快照、推荐关注项、工作对象表格和阶段分布。</p>
+              <div class="tags">
+                <span class="tag">结果摘要</span>
+                <span class="tag">推荐关注</span>
+                <span class="tag">跳转货盘/轨迹</span>
+              </div>
+            </div>
+
+            <div class="page project">
+              <h3>抖掌柜货盘</h3>
+              <div class="route">`/project/ecommerce/products`</div>
+              <p>货盘读取页。支持导入 Excel、搜索筛选、守门状态查看、结果快照查看，并从每个商品跳到流程轨迹。</p>
+              <div class="tags">
+                <span class="tag">Excel 导入</span>
+                <span class="tag">表格结果页</span>
+                <span class="tag">守门状态</span>
+              </div>
+            </div>
+
+            <div class="page project">
+              <h3>候选结果快照</h3>
+              <div class="route">`/project/ecommerce/sourcing`</div>
+              <p>选品对比页。以候选商品卡片和推荐分方式展示“谁更值得推进”，偏结果判断而非实际执行。</p>
+              <div class="tags">
+                <span class="tag">来源 Tabs</span>
+                <span class="tag">商品卡片流</span>
+                <span class="tag">推荐快照</span>
+              </div>
+            </div>
+
+            <div class="page project">
+              <h3>素材工坊</h3>
+              <div class="route">`/project/ecommerce/creative-studio`</div>
+              <p>素材结果回流页。左侧是筛选条件与同步入口，右侧是素材版本瀑布和底部时间线。</p>
+              <div class="tags">
+                <span class="tag">版本卡片</span>
+                <span class="tag">详情描述</span>
+                <span class="tag">结果时间线</span>
+              </div>
+            </div>
+
+            <div class="page flow">
+              <h3>流程看板</h3>
+              <div class="route">`/project/ecommerce/flow/:id`</div>
+              <p>单商品维度的流程轨迹页。用 React Flow 把各阶段节点画成流程图，点击节点会打开右侧详情抽屉。</p>
+              <div class="tags">
+                <span class="tag">流程图画布</span>
+                <span class="tag">节点抽屉</span>
+                <span class="tag">进度概览</span>
+              </div>
+            </div>
+
+            <div class="page warning">
+              <h3>订单页已被路由替换</h3>
+              <div class="route">`/project/ecommerce/orders` → 重定向到 `overview`</div>
+              <p>代码里存在 `Orders.tsx` 页面文件，但真实路由并不会进入该页，而是直接跳回总览页，属于“文件存在、路由未接入”的状态。</p>
+              <div class="tags">
+                <span class="tag">存在页面文件</span>
+                <span class="tag">当前不可访问</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow">↓ 当前代码中的缺口</div>
+        <div class="children two">
+          <div class="page danger">
+            <h3>首页卡片指向但路由未声明</h3>
+            <p>首页项目卡片里有 `量化结果看板` 和 `宿主与登录态中心` 两个入口配置，分别指向 `/project/stocks` 与 `/project/auth`，但在真实路由表中没有对应 `Route`。</p>
+            <div class="tags">
+              <span class="tag">Dashboard 卡片已写</span>
+              <span class="tag">点击后会进入空路由</span>
+            </div>
+          </div>
+
+          <div class="page warning">
+            <h3>流程入口使用默认占位 key</h3>
+            <p>左侧菜单中的“流程看板”默认跳转到 `flow/default`，实际流程页会再根据本地货盘或示例数据匹配具体工作流，因此更像一个“演示型入口”。</p>
+            <div class="tags">
+              <span class="tag">可访问</span>
+              <span class="tag">带占位参数</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">页面层次总结</h2>
+      <div class="grid-2">
+        <div class="node">
+          <div class="node-title">现在的页面组织逻辑</div>
+          <ul class="list">
+            <li>第一层是“首页总入口”，用项目卡片来分发不同工作台。</li>
+            <li>第二层是“独立结果页”，包括资讯聚合与执行记录中心。</li>
+            <li>第三层是“电商工作台子系统”，内部再细分成总览、货盘、选品、素材、流程轨迹。</li>
+            <li>整体不是传统后台的 CRUD 结构，而是“结果展示台 + 回看分析台”。</li>
+          </ul>
+        </div>
+        <div class="node">
+          <div class="node-title">最核心的用户流</div>
+          <ul class="list">
+            <li>从首页进入电商工作台。</li>
+            <li>先在总览页看“当前最值得复看什么”。</li>
+            <li>进入货盘页查看具体货品和结果阶段。</li>
+            <li>从货品进入流程看板，追踪单个商品的阶段详情。</li>
+            <li>如果要看候选结果或素材回流，再分别进入选品页和素材工坊。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Mermaid 版本</h2>
+      <p class="section-note">如果你后面想把这份图直接贴进文档系统或 Markdown，这段 Mermaid 可以直接复用。</p>
+      <div class="mermaid">
+        <pre>flowchart TD
+A[App Shell]
+
+A --> B[DashboardLayout]
+A --> C[ProjectLayout /project/ecommerce/*]
+
+B --> B1[/]
+B --> B2[/project/news]
+B --> B3[/project/runtime]
+
+C --> C0[/project/ecommerce -> overview]
+C --> C1[/project/ecommerce/overview]
+C --> C2[/project/ecommerce/products]
+C --> C3[/project/ecommerce/sourcing]
+C --> C4[/project/ecommerce/creative-studio]
+C --> C5[/project/ecommerce/flow/:id]
+C --> C6[/project/ecommerce/orders -> redirect overview]
+
+B1 -. 首页卡片已写但无真实路由 .-> D1[/project/stocks]
+B1 -. 首页卡片已写但无真实路由 .-> D2[/project/auth]
+
+C2 --> C5
+C1 --> C2
+C1 --> C5</pre>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

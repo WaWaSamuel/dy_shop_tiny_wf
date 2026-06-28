@@ -1,11 +1,11 @@
 ---
 name: "weread-wechat-digest"
-description: "Extracts WeRead shelf公众号 articles within a time window, reads and summarizes them, and outputs Markdown. Invoke when user asks to pull 微信读书/公众号文章, filter by time range, or generate summaries/links."
+description: "Uses a browser-driven WeRead workflow to collect shelf公众号 articles within a time window, summarize them, and by default submit structured results to the news digest endpoint for web display and later IM push."
 ---
 
 # WeRead WeChat Digest
 
-这个 Skill 用于复用当前项目里已经验证过的一套流程：从微信读书书架中的“公众号书籍”抓取指定时间窗内的文章，读取正文，提炼一句话摘要，并整理成 Markdown 文件。
+这个 Skill 用于复用当前项目里已经验证过的一套流程：从微信读书书架中的“公众号书籍”读取指定时间窗内的文章，提炼一句话摘要，并默认把结构化结果提交给结果展示台。Markdown 只作为可选输出，不再是默认主链路。
 
 ## 适用场景
 
@@ -15,6 +15,7 @@ description: "Extracts WeRead shelf公众号 articles within a time window, read
 - 用户要求从书架里的公众号来源抓文章
 - 用户要求按时间窗口筛选文章，例如“昨天早 9 点到今天早 9 点”
 - 用户要求对每篇文章读取正文并生成一句话摘要
+- 用户要求把结果提交到资讯展示台或继续推送到 IM
 - 用户要求导出为 Markdown，并把链接做成超链接
 
 不适用场景：
@@ -33,7 +34,7 @@ description: "Extracts WeRead shelf公众号 articles within a time window, read
 
 已验证可通过书架页拿到公众号“书籍”入口。
 
-### 2. 识别公众号 bookId
+### 2. 识别公众号来源
 
 公众号来源在微信读书里本质上是 `MP_WXS_*` 形式的 book：
 
@@ -159,9 +160,78 @@ Markdown 超链接规范：
 - 2026-06-25 12:04 | [一句话摘要。](https://weread.qq.com/web/mp/content?reviewId=...)
 ```
 
-## 7. 输出规范
+## 7. 默认输出规范
 
-默认输出文件为项目根目录下的 Markdown，例如：
+默认输出不是 Markdown，而是提交到结果展示台接口：
+
+```text
+POST /api/v1/news/digest/submit
+```
+
+最小提交字段：
+
+```json
+{
+  "window": {
+    "start": "2026-06-26T09:00:00+08:00",
+    "end": "2026-06-27T09:00:00+08:00"
+  },
+  "items": [
+    {
+      "title": "文章标题",
+      "source_name": "机器之心",
+      "url": "https://weread.qq.com/web/mp/content?reviewId=xxx",
+      "summary": "一句话摘要"
+    }
+  ],
+  "sources": [
+    {
+      "name": "机器之心",
+      "status": "agent_submitted"
+    }
+  ],
+  "mode": "browser_agent",
+  "generated_by": "TRAE Work 资讯 Agent"
+}
+```
+
+提交成功后，应继续验证：
+
+- `GET /api/v1/news/digest` 可以读到本轮结果
+- 若用户要求发 IM，必须显式调用 `im.send_card` cmd/runtime tool 发送消息卡片
+- 推送后应记录或展示 `message_id`、目标用户 / 会话和发送状态
+
+## 8. 显式调用 IM tool
+
+当本 skill 需要把摘要推送到 IM 时，不直接调用飞书 SDK。必须调用：
+
+- tool：`im.send_card`
+- 契约文件：`.trae/tools/im-send-card/TOOL.md`
+- 后端入口：`POST /api/v1/tools/invoke`
+
+调用示例：
+
+```json
+{
+  "name": "im.send_card",
+  "args": {
+    "title": "每日资讯摘要",
+    "lines": [
+      "时间窗：<start> - <end>",
+      "1. [标题](url) - 一句话摘要",
+      "2. [标题](url) - 一句话摘要"
+    ],
+    "template": "blue",
+    "open_id": "<宿主飞书 open_id，可选>"
+  }
+}
+```
+
+如果 `im.send_card` 返回失败，不允许把本轮 IM 推送标记为成功；应保留摘要展示结果，并把推送失败写入结果或归档。
+
+## 9. Markdown 可选输出
+
+如果用户明确要求导出 Markdown，再额外输出项目根目录下的 Markdown，例如：
 
 ```text
 weread_articles_<start>_to_<end>.md
@@ -197,16 +267,21 @@ weread_articles_<start>_to_<end>.md
 - 获取各公众号的 `bookId`
 - 按时间窗拉取公众号文章目录
 - 读取正文并生成一句话摘要
+- 提交浏览器型资讯结果到 `/api/v1/news/digest/submit`
+- 支持在 web 上展示资讯结果
+- 支持继续从展示台触发飞书推送并回写推送记录
 - 输出 Markdown 文件
 - 支持把超链接文本改成摘要而不是原标题
 
 ## 操作注意事项
 
+- 不要把项目后端 Cookie 探针当成主链路，当前主链路是浏览器型 Agent
 - 不要依赖普通 `curl` 直拉目录接口，通常会失去微信读书登录态
 - 优先使用浏览器上下文中的请求能力
 - Tab ID 可能失效，必要时先重新枚举当前 Chrome 窗口和标签页
 - 如果 `mp.weixin.qq.com` 原链被工具脱敏，不要伪造；直接回退到微信读书稳定链接
 - 修改 Markdown 时，如果 Unicode 上下文导致补丁失败，可删除后按最终内容重建文件
+- 如果正文读取被验证码或跳首页打断，可先提交“基于当前可见内容整理”的降级结果，并在 `notes` 中写明限制
 
 ## 最小执行清单
 
@@ -217,7 +292,8 @@ weread_articles_<start>_to_<end>.md
 5. 依据目标时间窗筛选文章
 6. 用 `/web/mp/content` 读取正文
 7. 生成一句话摘要
-8. 按用户指定格式输出 Markdown
+8. 默认提交到 `/api/v1/news/digest/submit`
+9. 若用户要求，再输出 Markdown 或触发 IM 推送
 
 ## 示例触发词
 

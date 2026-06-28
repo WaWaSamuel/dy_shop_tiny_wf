@@ -16,6 +16,7 @@ import {
   Statistic,
   message,
   Alert,
+  List,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadProps } from 'antd';
@@ -30,7 +31,8 @@ import {
   parseCatalogExcel,
   saveCatalog,
 } from '@/services/douzhangguiCatalog';
-import { buildCatalogKey, buildWorkflowAssetFromCatalog, getWorkflowAssetProgress, getStoredWorkflowAssets } from '@/services/workflowAssets';
+import { buildCatalogKey } from '@/services/workflowAssets';
+import { buildCatalogResultSnapshot, getGuardStatus } from '@/services/resultConsoleApi';
 
 const { Text } = Typography;
 
@@ -103,6 +105,10 @@ export default function Products() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [catalogItems, setCatalogItems] = useState<ImportedCatalogItem[]>(() => getStoredCatalog());
+  const [guardStatus, setGuardStatus] = useState<Awaited<ReturnType<typeof getGuardStatus>> | null>(null);
+  const [catalogResultSnapshot, setCatalogResultSnapshot] = useState<Awaited<ReturnType<typeof buildCatalogResultSnapshot>> | null>(null);
+  const [guardLoading, setGuardLoading] = useState(false);
+  const [catalogResultLoading, setCatalogResultLoading] = useState(false);
 
   useEffect(() => {
     const syncCatalog = () => setCatalogItems(getStoredCatalog());
@@ -110,15 +116,49 @@ export default function Products() {
     return () => window.removeEventListener(CATALOG_UPDATED_EVENT, syncCatalog);
   }, []);
 
+  const loadGuardStatus = async (refresh = false) => {
+    setGuardLoading(true);
+    try {
+      const result = await getGuardStatus(refresh);
+      setGuardStatus(result);
+    } catch (error) {
+      console.error(error);
+      message.error('守门状态获取失败');
+    } finally {
+      setGuardLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadGuardStatus(false);
+  }, []);
+
   const usingImportedCatalog = catalogItems.length > 0;
   const dataSource = usingImportedCatalog ? catalogItems : demoProducts;
   const metrics = useMemo(() => getCatalogMetrics(dataSource), [dataSource]);
-  const workflowMap = useMemo(() => {
-    const assets = usingImportedCatalog
-      ? getStoredWorkflowAssets()
-      : demoProducts.map((item) => buildWorkflowAssetFromCatalog({ ...item, catalogKey: item.catalogKey || buildCatalogKey(item) }));
-    return new Map(assets.map((asset) => [asset.catalogKey, asset]));
-  }, [usingImportedCatalog]);
+
+  const loadCatalogResultSnapshot = async () => {
+    setCatalogResultLoading(true);
+    try {
+      const result = await buildCatalogResultSnapshot(dataSource);
+      setCatalogResultSnapshot(result);
+    } catch (error) {
+      console.error(error);
+      message.error('结果快照获取失败');
+    } finally {
+      setCatalogResultLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadCatalogResultSnapshot();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSource]);
+
+  const resultViewMap = useMemo(
+    () => new Map((catalogResultSnapshot?.workItems || []).map((item) => [item.catalogKey, item])),
+    [catalogResultSnapshot]
+  );
 
   const filteredProducts = dataSource.filter((p) => {
     const matchSearch =
@@ -222,17 +262,17 @@ export default function Products() {
       sorter: (a, b) => (a.stock ?? 0) - (b.stock ?? 0),
     },
     {
-      title: '流程进度',
-      key: 'progress',
-      width: 170,
+      title: '结果阶段',
+      key: 'resultStage',
+      width: 220,
       render: (_, record) => {
         const catalogKey = record.catalogKey || buildCatalogKey(record);
-        const progress = getWorkflowAssetProgress(workflowMap.get(catalogKey) || null);
+        const resultView = resultViewMap.get(catalogKey);
         return (
           <div>
-            <div>{progress.completedCount}/{progress.totalCount} 已完成</div>
+            <div>{resultView?.currentStageLabel || '等待结果写入'}</div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              当前节点：{progress.currentLabel}
+              {resultView?.latestResult || '当前没有结构化结果摘要'}
             </Text>
           </div>
         );
@@ -264,6 +304,24 @@ export default function Products() {
           </Text>
         </div>
       ),
+    },
+    {
+      title: '风险 / 建议',
+      key: 'focus',
+      width: 200,
+      render: (_, record) => {
+        const catalogKey = record.catalogKey || buildCatalogKey(record);
+        const resultView = resultViewMap.get(catalogKey);
+        const riskColor = resultView?.riskLevel === 'high' ? 'red' : resultView?.riskLevel === 'medium' ? 'gold' : 'green';
+        return (
+          <Space direction="vertical" size={2}>
+            <Tag color={riskColor}>风险：{resultView?.riskLevel || 'low'}</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {resultView?.recommendedFocus || '当前可继续观察结果变化'}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: '操作',
@@ -302,7 +360,7 @@ export default function Products() {
               <Text strong style={{ fontSize: 18 }}>抖掌柜货盘读取</Text>
               <Text type="secondary">
                 1688 物流跟踪和抖店上架在抖掌柜完成，这里只读取导出的 Excel，
-                统一展示货品、库存、状态和后续经营动作。
+                统一展示货品、库存、状态和结果摘要，不在当前页面直接承担业务执行。
               </Text>
               <Alert
                 type="info"
@@ -337,6 +395,119 @@ export default function Products() {
           </Col>
         </Row>
       </Card>
+
+      {guardStatus && (
+        <Card className="surface-card" style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={15}>
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: 16 }}>守门与结果读取状态</Text>
+                <Alert
+                  type={guardStatus.guardLevel === 'ready' ? 'success' : guardStatus.guardLevel === 'warning' ? 'warning' : 'error'}
+                  showIcon
+                  message={guardStatus.summary}
+                  description={
+                    guardStatus.blockingReasons.length
+                      ? guardStatus.blockingReasons.join('；')
+                      : `开发链：${guardStatus.allowDevelopmentFlow ? '可继续' : '阻断'}；业务链：${guardStatus.allowBusinessFlow ? '可继续' : '阻断'}；外部链：${guardStatus.allowExternalFlow ? '可继续' : '建议先恢复登录态'}`
+                  }
+                />
+              </Space>
+            </Col>
+            <Col xs={24} lg={9}>
+              <Space wrap style={{ width: '100%', justifyContent: 'flex-end' }}>
+                <Button
+                  icon={<StickerIcon src={stickers.actions.retry} alt="刷新守门状态" size="sm" />}
+                  loading={guardLoading}
+                  onClick={() => void loadGuardStatus(true)}
+                >
+                  刷新守门状态
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<StickerIcon src={stickers.actions.retry} alt="刷新结果快照" size="sm" />}
+                  loading={catalogResultLoading}
+                  onClick={() => void loadCatalogResultSnapshot()}
+                >
+                  刷新结果快照
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+      )}
+
+      {catalogResultSnapshot && (
+        <Card className="surface-card" style={{ marginBottom: 24 }} title="货盘结果快照">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={10}>
+              <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.58)' }}>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Text strong>结果接收质量</Text>
+                  <Text>{catalogResultSnapshot.qualityReview.summary}</Text>
+                  <Space wrap>
+                    <Tag color={catalogResultSnapshot.qualityReview.riskLevel === 'low' ? 'green' : catalogResultSnapshot.qualityReview.riskLevel === 'medium' ? 'gold' : 'red'}>
+                      风险：{catalogResultSnapshot.qualityReview.riskLevel}
+                    </Tag>
+                    <Tag color="blue">稳定结果：{catalogResultSnapshot.healthyItems}</Tag>
+                    <Tag color="orange">待关注：{catalogResultSnapshot.attentionCount}</Tag>
+                  </Space>
+                  <Space size={[8, 8]} wrap>
+                    {catalogResultSnapshot.qualityReview.findings.map((item) => (
+                      <Tag key={item.label}>{item.label} {item.count}</Tag>
+                    ))}
+                  </Space>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} lg={14}>
+              <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.58)' }}>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Text strong>候选亮点与关注建议</Text>
+                  <Text>{catalogResultSnapshot.candidateHighlights.summary}</Text>
+                  <List
+                    size="small"
+                    dataSource={catalogResultSnapshot.candidateHighlights.items.slice(0, 3)}
+                    locale={{ emptyText: '当前没有候选亮点' }}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                          <Space wrap>
+                            <Text strong>{item.name}</Text>
+                            <Tag color={catalogResultSnapshot.candidateHighlights.recommendedCatalogKey === item.catalogKey ? 'green' : 'default'}>
+                              {catalogResultSnapshot.candidateHighlights.recommendedCatalogKey === item.catalogKey ? '优先复看' : '候选'}
+                            </Tag>
+                            <Tag>分数 {item.score}</Tag>
+                          </Space>
+                          <Text type="secondary">{item.category} · {item.sku}</Text>
+                          <Space size={[6, 6]} wrap>
+                            {item.reasons.map((reason) => (
+                              <Tag key={reason}>{reason}</Tag>
+                            ))}
+                          </Space>
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                  <Space size={[6, 6]} wrap>
+                    {catalogResultSnapshot.recommendedFocus.map((item) => (
+                      <Tag key={item}>{item}</Tag>
+                    ))}
+                  </Space>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24}>
+              <Alert
+                type="info"
+                showIcon
+                message={catalogResultSnapshot.summary}
+                description={`结果快照生成时间：${catalogResultSnapshot.generatedAt}`}
+              />
+            </Col>
+          </Row>
+        </Card>
+      )}
 
       <Card>
         <Row gutter={16} style={{ marginBottom: 16 }}>

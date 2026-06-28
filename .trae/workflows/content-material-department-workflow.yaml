@@ -1,0 +1,55 @@
+workflow_id: content_material_department_workflow
+name: 电商内容与素材部工作流
+description: >
+  用于商品标题、卖点、详情页结构、素材 brief 和素材工坊任务规划。
+  它是 `ecommerce_workflow` 内部的内容素材 SOP。
+
+department: 电商部门 / 内容与素材部
+parent_workflow: ecommerce_workflow
+minister_role: creative-strategy-agent
+
+entry_rules:
+  - parent_workflow == "ecommerce_workflow"
+  - task_domain in ["creative", "material", "copywriting", "detail_page"]
+
+workflow_controller: ecommerce-orchestrator-agent
+
+state_schema:
+  - confirmed_product_direction
+  - supplier_result
+  - creative_result
+  - listing_result
+
+roles:
+  - key: content_material_minister
+    agent: creative-strategy-agent
+    responsibility: 标题、卖点、详情页结构和素材策略
+  - key: listing_readiness_checker
+    skill: listing-readiness-check
+    responsibility: 素材是否满足上架准备度
+
+nodes:
+  - key: creative_strategy
+    agent: creative-strategy-agent
+    role: content_material_minister
+  - key: listing_readiness
+    skill: listing-readiness-check
+    role: listing_readiness_checker
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: creative_strategy
+    to: listing_readiness
+    when: creative_ready == true
+    input: [creative_result, supplier_result]
+    output: [listing_check_task]
+  - from: listing_readiness
+    to: archive
+    when: listing_result is not null
+    input: [creative_result, listing_result]
+    output: [archive_record]
+
+success_criteria:
+  - creative_result is not null

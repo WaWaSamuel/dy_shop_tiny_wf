@@ -218,6 +218,137 @@ export interface ApiResponse<T = unknown> {
   data: T;
 }
 
+export type OrchestrationNodeKind = 'agent' | 'workflow' | 'skill' | 'tool' | 'node';
+
+export interface OrchestrationGraphNodeData extends Record<string, unknown> {
+  id: string;
+  nodeKey?: string;
+  kind: OrchestrationNodeKind;
+  label: string;
+  subtitle?: string | null;
+  description?: string | null;
+  status?: string | null;
+  filePath?: string | null;
+  roleType?: string | null;
+  layer?: string | null;
+  role?: string | null;
+  workflowId?: string;
+  workflowScopes?: string[];
+  relatedWorkflows?: string[];
+  relatedSkills?: string[];
+  relatedTools?: string[];
+  primaryInputs?: string[];
+  primaryOutputs?: string[];
+  defaultNext?: string[];
+  replacedBySkill?: string | null;
+  nodeCount?: number;
+  edgeCount?: number;
+}
+
+export interface OrchestrationCatalogAgent {
+  id: string;
+  label: string;
+  kind: 'agent';
+  status: string;
+  roleType?: string | null;
+  layer?: string | null;
+  workflowScopes: string[];
+  filePath?: string | null;
+  primaryInputs: string[];
+  primaryOutputs: string[];
+  defaultNext: string[];
+  replacedBySkill?: string | null;
+  relatedWorkflows: string[];
+  relatedSkills: string[];
+  relatedTools: string[];
+}
+
+export interface OrchestrationCatalogSkill {
+  id: string;
+  label: string;
+  kind: 'skill';
+  status: string;
+  roleType?: string | null;
+  workflowScopes: string[];
+  filePath?: string | null;
+  replacesAgents?: string[];
+  tools?: string[];
+}
+
+export interface OrchestrationCatalogTool {
+  id: string;
+  label: string;
+  kind: 'tool';
+  status: string;
+  toolType?: string | null;
+  filePath?: string | null;
+  implementation?: string | null;
+  backendEntry?: string | null;
+  commandEntry?: string | null;
+  invokeName?: string | null;
+  usedBySkills: string[];
+  primaryInputs: string[];
+  primaryOutputs: string[];
+}
+
+export interface OrchestrationWorkflowSummary {
+  id: string;
+  label: string;
+  kind: 'workflow';
+  department?: string | null;
+  description?: string | null;
+  parentWorkflow?: string | null;
+  childWorkflows: string[];
+  ministerRole?: string | null;
+  workflowController?: string | null;
+  entryRules: string[];
+  successCriteria: string[];
+  filePath?: string | null;
+}
+
+export interface OrchestrationWorkflowGraph extends OrchestrationWorkflowSummary {
+  workflowId: string;
+  roles: Array<Record<string, unknown>>;
+  nodes: Array<{
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: OrchestrationGraphNodeData;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+    animated?: boolean;
+    data?: Record<string, unknown>;
+  }>;
+}
+
+export interface OrchestrationGraphPayload {
+  source: {
+    registry: string;
+    workflows: string;
+    generatedFrom: string;
+  };
+  summary: {
+    agentCount: number;
+    activeAgentCount: number;
+    workflowCount: number;
+    skillCount: number;
+    toolCount: number;
+  };
+  agents: OrchestrationCatalogAgent[];
+  skills: OrchestrationCatalogSkill[];
+  tools: OrchestrationCatalogTool[];
+  workflows: OrchestrationWorkflowSummary[];
+  rootGraph: {
+    nodes: OrchestrationWorkflowGraph['nodes'];
+    edges: OrchestrationWorkflowGraph['edges'];
+  };
+  workflowGraphs: Record<string, OrchestrationWorkflowGraph>;
+}
+
 export interface NewsDigestWindow {
   start: string;
   end: string;
@@ -254,6 +385,20 @@ export interface NewsDigestItem {
   excerpt: string;
 }
 
+export interface NewsDigestPushRecord {
+  id: string;
+  pushedAt: string;
+  title: string;
+  content: string;
+  itemCount: number;
+  status: 'sent' | 'failed';
+  targetHint: string;
+  receiveIdType: string;
+  receiveId: string;
+  messageId?: string | null;
+  errorDetail?: string | null;
+}
+
 export interface NewsDigest {
   window: NewsDigestWindow;
   refreshedAt: string;
@@ -263,6 +408,9 @@ export interface NewsDigest {
   sources: NewsSource[];
   items: NewsDigestItem[];
   notes: string[];
+  mode: string;
+  generatedBy?: string | null;
+  pushRecords: NewsDigestPushRecord[];
 }
 
 export interface SessionSourceProbeDetail {
@@ -294,4 +442,76 @@ export interface SessionSource {
   hasStoredCookie: boolean;
   isStale: boolean;
   probeDetail: SessionSourceProbeDetail;
+}
+
+export interface RuntimeExecutionRecord {
+  id: string;
+  owner_id: string;
+  project_key: string;
+  workflow_id?: string | null;
+  run_id: string;
+  parent_run_id?: string | null;
+  capability_kind: 'agent' | 'workflow' | 'skill' | 'other';
+  capability_key: string;
+  capability_label?: string | null;
+  source_kind?: string | null;
+  source_key?: string | null;
+  phase?: string | null;
+  status: string;
+  level: string;
+  title: string;
+  summary?: string | null;
+  detail?: string | null;
+  host_issue?: string | null;
+  review_scorecard: Record<string, unknown>;
+  input_payload: Record<string, unknown>;
+  output_payload: Record<string, unknown>;
+  artifacts: Array<Record<string, unknown>>;
+  tags: string[];
+  metadata: Record<string, unknown>;
+  loop_round?: number | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RuntimeCapabilityCatalogItem {
+  capability_kind: 'agent' | 'workflow' | 'skill' | 'other';
+  capability_key: string;
+  display_name: string;
+  status: string;
+  role_type?: string | null;
+  workflow_scopes: string[];
+  layer?: string | null;
+  file_path?: string | null;
+  source: string;
+  metadata: Record<string, unknown>;
+  record_count?: number;
+  last_status?: string | null;
+  last_run_at?: string | null;
+}
+
+export interface RuntimeOverviewSummary {
+  total_capabilities: number;
+  registered_agents: number;
+  registered_workflows: number;
+  registered_skills: number;
+  total_records: number;
+  recent_records_24h: number;
+  status_counts: Record<string, number>;
+  kind_counts: Record<string, number>;
+  project_counts: Record<string, number>;
+}
+
+export interface RuntimeOverview {
+  summary: RuntimeOverviewSummary;
+  catalog: RuntimeCapabilityCatalogItem[];
+  recent_records: RuntimeExecutionRecord[];
+  filter_options: {
+    project_keys: string[];
+    workflow_ids: string[];
+    status_values: string[];
+    capability_kinds: string[];
+  };
 }

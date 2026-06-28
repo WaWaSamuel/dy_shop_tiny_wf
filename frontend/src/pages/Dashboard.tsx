@@ -24,6 +24,7 @@ interface ProjectCard {
   key: string;
   title: string;
   description: string;
+  summary: string;
   icon: React.ReactNode;
   color: string;
   gradient: string;
@@ -36,42 +37,70 @@ interface ProjectCard {
 const projects: ProjectCard[] = [
   {
     key: 'ecommerce',
-    title: '跨境电商工作台',
-    description: '全链路跨境电商管理平台，涵盖选品、货源、广告素材生成、商品管理、订单物流等模块',
+    title: '电商结果展示台',
+    description: '聚合 agent 已完成的货盘结果、候选推荐、素材结果和流程轨迹，优先展示当前最值得复看的工作对象',
+    summary: '优先入口',
     icon: <img className="project-card-mascot" src={stickers.dashboard.ecommerce} alt="跨境电商工作台" />,
     color: '#ffb6d5',
     gradient: 'linear-gradient(135deg, #ffd7e7, #ffe7c4)',
     status: 'active',
     route: '/project/ecommerce',
-    tags: ['TikTok Shop', 'Temu', '独立站'],
+    tags: ['结果快照', '候选推荐', '流程轨迹'],
+  },
+  {
+    key: 'runtime',
+    title: '执行记录中心',
+    description: '统一查看 agent、workflow、skill 的登记目录与执行记录，对后续新增能力自动生效',
+    summary: '新增入口',
+    icon: <img className="project-card-mascot" src={stickers.dashboard.auth} alt="执行记录中心" />,
+    color: '#d8d4ff',
+    gradient: 'linear-gradient(135deg, #efe8ff, #ffdfe9)',
+    status: 'active',
+    route: '/project/runtime',
+    tags: ['Agent 记录', 'Workflow 轨迹', 'Skill 日志'],
+  },
+  {
+    key: 'orchestration',
+    title: '编排可视化图谱',
+    description: '用 ReactFlow 查看 .trae 下 agent、workflow、skill、tool 的编排关系，支持进入 Workflow 子图',
+    summary: '编排入口',
+    icon: <img className="project-card-mascot" src={stickers.dashboard.auth} alt="编排可视化图谱" />,
+    color: '#c8e7ff',
+    gradient: 'linear-gradient(135deg, #dff2ff, #ffe2ef)',
+    status: 'active',
+    route: '/project/orchestration',
+    tags: ['ReactFlow', '嵌套子图', '.trae 资产'],
   },
   {
     key: 'stocks',
-    title: '量化投资系统',
-    description: '股票与加密货币量化交易系统，支持策略回测、实盘信号、持仓分析、风险控制',
+    title: '量化结果看板',
+    description: '沉淀策略信号、仓位变化和风险结果，作为后续量化项目的统一结果入口',
+    summary: '后续扩展',
     icon: <img className="project-card-mascot" src={stickers.dashboard.stocks} alt="量化投资系统" />,
     color: '#9ed8ff',
     gradient: 'linear-gradient(135deg, #d8efff, #cfe7ff)',
     status: 'developing',
     route: '/project/stocks',
-    tags: ['A股', '美股', '加密货币'],
+    tags: ['策略结果', '持仓轨迹', '风险提醒'],
   },
   {
     key: 'news',
-    title: '资讯聚合引擎',
-    description: '多源资讯抓取与聚合分析平台，AI 摘要、热点追踪、情绪分析、定制推送',
+    title: '资讯结果看板',
+    description: '汇总资讯抓取结果、热点主题和摘要卡片，让每天的资讯输出按结果顺序展开',
+    summary: '今日可用',
     icon: <img className="project-card-mascot" src={stickers.dashboard.news} alt="资讯聚合引擎" />,
     color: '#ffe0a3',
     gradient: 'linear-gradient(135deg, #fff1c6, #ffe3a5)',
-    status: 'planned',
+    status: 'active',
     route: '/project/news',
-    tags: ['RSS', 'AI摘要', '情绪分析'],
+    tags: ['资讯摘要', '热点提炼', '飞书推送'],
     dependencies: ['weread'],
   },
   {
     key: 'auth',
-    title: '统一认证中心',
-    description: '多项目统一身份认证与权限管理系统，支持 OAuth2、RBAC、多租户',
+    title: '宿主与登录态中心',
+    description: '集中展示网页登录态、Bridge 状态和需要人工恢复的外部依赖，方便守门和回流',
+    summary: '宿主守门',
     icon: <img className="project-card-mascot" src={stickers.dashboard.auth} alt="统一认证中心" />,
     color: '#d8d4ff',
     gradient: 'linear-gradient(135deg, #ece6ff, #dde7ff)',
@@ -149,6 +178,9 @@ export default function Dashboard() {
     () => [...sessionSources].sort((left, right) => left.name.localeCompare(right.name, 'zh-CN')),
     [sessionSources],
   );
+  const healthySourceCount = sessionSources.filter((item) => item.healthy).length;
+  const unhealthySourceCount = sessionSources.length - healthySourceCount;
+  const heroStatusText = unhealthySourceCount > 0 ? '宿主守门中' : '结果读取正常';
 
   const renderSessionTooltip = (source: SessionSource) => (
     <div className="dashboard-session-tooltip">
@@ -205,6 +237,50 @@ export default function Dashboard() {
       </div>
       <div className="dashboard-home-content">
         <div className="dashboard-home-stack">
+          <Card className="surface-card" style={{ marginBottom: 24, borderRadius: 28, background: 'rgba(255,255,255,0.72)' }}>
+            <Row gutter={[24, 24]} align="middle">
+              <Col xs={24} lg={15}>
+                <Space align="start" size={16}>
+                  <div className="project-card-icon" style={{ background: 'linear-gradient(135deg, #ffe4ef, #fff1c9)', width: 84, height: 84 }}>
+                    <img className="project-card-mascot" src={stickers.dashboard.ecommerce} alt="结果展示台" />
+                  </div>
+                  <div>
+                    <Title level={3} style={{ margin: 0 }}>个人结果展示台</Title>
+                    <Text style={{ display: 'block', marginTop: 10, fontSize: 14, lineHeight: 1.75 }}>
+                      agents 在外部完成工作，这里只负责把工作结果、候选建议、素材结果、资讯摘要和宿主状态整理成一眼能读懂的看板。
+                    </Text>
+                    <Space size={[8, 8]} wrap style={{ marginTop: 14 }}>
+                      <Tag color={unhealthySourceCount > 0 ? 'gold' : 'green'}>{heroStatusText}</Tag>
+                      <Tag color="blue">结果入口 {projects.filter((item) => item.status === 'active').length} 个</Tag>
+                      <Tag>正常登录态 {healthySourceCount}</Tag>
+                      <Tag color={unhealthySourceCount > 0 ? 'red' : 'default'}>待恢复 {unhealthySourceCount}</Tag>
+                    </Space>
+                  </div>
+                </Space>
+              </Col>
+              <Col xs={24} lg={9}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                  <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 20 }}>
+                    <Text type="secondary">主入口</Text>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>电商结果展示台</div>
+                  </Card>
+                  <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 20 }}>
+                    <Text type="secondary">今日状态</Text>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>{heroStatusText}</div>
+                  </Card>
+                  <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 20 }}>
+                    <Text type="secondary">资讯链路</Text>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>{projects.find((item) => item.key === 'news')?.status === 'active' ? '已挂载' : '待补充'}</div>
+                  </Card>
+                  <Card size="small" bordered={false} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 20 }}>
+                    <Text type="secondary">宿主守门</Text>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>{sessionLoading ? '检查中' : '可查看'}</div>
+                  </Card>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
           <Row gutter={[24, 24]} className="dashboard-entry-grid">
             {projects.map((project, index) => (
               <Col
@@ -235,6 +311,9 @@ export default function Dashboard() {
                       <Title level={5} className="project-card-title">
                         {project.title}
                       </Title>
+                      <Tag color={index === 0 ? 'magenta' : 'default'} style={{ borderRadius: 999, marginBottom: 10 }}>
+                        {project.summary}
+                      </Tag>
                       <Text className="project-card-desc" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
                         {project.description}
                       </Text>
@@ -254,6 +333,9 @@ export default function Dashboard() {
 
           <div className="dashboard-session-strip">
             <div className="dashboard-session-strip-inner">
+              <Text type="secondary" style={{ marginRight: 8 }}>
+                宿主登录态
+              </Text>
               <Space size={10} wrap className="dashboard-session-strip-items">
                 {orderedSessionSources.map((source) => (
                   <Tooltip key={source.id} title={renderSessionTooltip(source)} placement="top">

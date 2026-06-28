@@ -1,0 +1,61 @@
+workflow_id: customer_risk_department_workflow
+name: 电商客服风控部工作流
+description: >
+  用于异常订单、人工确认、暂停、取消、退款/发货/补偿建议和风险归档。
+  它是 `ecommerce_workflow` 内部的客服风控 SOP。
+
+department: 电商部门 / 客服风控部
+parent_workflow: ecommerce_workflow
+minister_role: exception-order-agent
+
+entry_rules:
+  - parent_workflow == "ecommerce_workflow"
+  - task_domain in ["order_exception", "risk", "customer_service"]
+
+workflow_controller: ecommerce-orchestrator-agent
+
+state_schema:
+  - order_exception
+  - logistics_state
+  - exception_result
+  - human_decision
+  - final_status
+
+roles:
+  - key: customer_risk_minister
+    agent: exception-order-agent
+    responsibility: 异常订单判断、处理建议、风险摘要
+  - key: risk_human_gate
+    skill: human-gate-approval
+    responsibility: 退款、发货、补偿、取消等高风险动作确认
+
+nodes:
+  - key: exception_order
+    agent: exception-order-agent
+    role: customer_risk_minister
+  - key: human_gate
+    skill: human-gate-approval
+    role: risk_human_gate
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: exception_order
+    to: human_gate
+    when: exception_confirmation_required == true
+    input: [exception_result]
+    output: [decision_prompt]
+  - from: exception_order
+    to: archive
+    when: exception_confirmation_required != true
+    input: [exception_result]
+    output: [archive_record]
+  - from: human_gate
+    to: archive
+    when: decision in ["continue", "pause", "cancel", "change_plan"]
+    input: [decision, exception_result]
+    output: [archive_record]
+
+success_criteria:
+  - exception_result is not null

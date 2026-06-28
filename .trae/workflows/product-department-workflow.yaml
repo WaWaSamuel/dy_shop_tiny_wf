@@ -1,0 +1,70 @@
+workflow_id: product_department_workflow
+name: 电商商品部工作流
+description: >
+  用于货盘质量检查、选品候选发现、单品工作流资产维护和上架准备度检查。
+  它是 `ecommerce_workflow` 内部的商品部 SOP。
+
+department: 电商部门 / 商品部
+parent_workflow: ecommerce_workflow
+minister_role: product-minister-agent
+
+entry_rules:
+  - parent_workflow == "ecommerce_workflow"
+  - task_domain in ["catalog", "product", "candidate", "listing_readiness"]
+
+workflow_controller: product-minister-agent
+
+state_schema:
+  - catalog_object
+  - catalog_quality_result
+  - candidate_list
+  - product_workflow_asset
+  - listing_result
+
+roles:
+  - key: product_minister
+    agent: product-minister-agent
+    responsibility: 商品部 SOP 编排、阶段判断、候选确认与下游交接
+  - key: catalog_quality_checker
+    skill: catalog-import-check
+    responsibility: 货盘导入质量检查
+  - key: product_selector
+    agent: candidate-discovery-agent
+    responsibility: 选品候选发现、商品机会排序、风险提示
+  - key: listing_readiness_checker
+    skill: listing-readiness-check
+    responsibility: 上架准备度检查
+
+nodes:
+  - key: catalog_quality
+    skill: catalog-import-check
+    role: catalog_quality_checker
+  - key: candidate_discovery
+    agent: candidate-discovery-agent
+    role: product_selector
+  - key: listing_readiness
+    skill: listing-readiness-check
+    role: listing_readiness_checker
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: catalog_quality
+    to: candidate_discovery
+    when: quality_passed == true
+    input: [catalog_quality_result]
+    output: [candidate_task]
+  - from: candidate_discovery
+    to: listing_readiness
+    when: candidate_list is not null
+    input: [candidate_list, product_workflow_asset]
+    output: [listing_check_task]
+  - from: listing_readiness
+    to: archive
+    when: listing_result is not null
+    input: [catalog_quality_result, candidate_list, listing_result]
+    output: [archive_record]
+
+success_criteria:
+  - listing_result is not null

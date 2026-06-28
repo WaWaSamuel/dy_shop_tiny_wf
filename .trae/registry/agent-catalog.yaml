@@ -1,0 +1,256 @@
+version: 1
+catalog_name: DYShop TRAE Work Agent Catalog
+description: >
+  统一登记当前项目中所有 TRAE Work agents 的角色类型、适用工作流、输入输出和默认下一跳。
+  该文件用于把“角色定义”和“工作流结构”拆开，避免再用一张大图混合表达所有层级。
+
+role_types:
+  - global_orchestrator
+  - workflow_controller
+  - optimizer
+  - evaluator
+  - diagnostician
+  - worker
+  - reviewer
+  - validator
+  - acceptance
+  - guard
+  - recovery
+  - hitl
+  - archivist
+
+agents:
+  - id: ceo-orchestrator-agent
+    file: .trae/agents/core/ceo-orchestrator-agent.md
+    status: active
+    role_type: global_orchestrator
+    workflow_scope: [all]
+    layer: global
+    primary_inputs: [user_task, prd, environment_state, agent_catalog]
+    primary_outputs: [workflow_selection, first_hop, reroute_decision]
+    default_next: [technology-minister-agent, news-digest-agent, ecommerce-orchestrator-agent, self-optimization-agent]
+
+  - id: ecommerce-orchestrator-agent
+    file: .trae/agents/ecommerce/ecommerce-minister-agent.md
+    status: active
+    role_type: workflow_controller
+    workflow_scope: [ecommerce_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow]
+    layer: workflow
+    primary_inputs: [catalog_object, guard_result, stage_results]
+    primary_outputs: [current_stage, next_node, need_human_gate]
+    default_next: [product-minister-agent, catalog-import-check, candidate-discovery-agent, supplier-lookup-agent, creative-strategy-agent, listing-readiness-check, exception-order-agent, workflow-archive-report]
+
+  - id: technology-minister-agent
+    file: .trae/agents/development/technology-minister-agent.md
+    status: active
+    role_type: evaluator
+    workflow_scope: [development_workflow]
+    layer: workflow
+    primary_inputs: [user_task, pages, routes, logs, screenshots, environment_state]
+    primary_outputs: [evaluation_summary, issue_domain, next_dev_agent, acceptance_ready]
+    default_next: [issue-diagnosis-agent, backend-development-agent, frontend-development-agent, ui-ux-review-agent, regression-validation-agent, host-acceptance-agent, ceo-orchestrator-agent]
+
+  - id: issue-diagnosis-agent
+    file: .trae/agents/development/issue-diagnosis-agent.md
+    status: active
+    role_type: diagnostician
+    workflow_scope: [development_workflow]
+    layer: workflow
+    primary_inputs: [problem_report, screenshots, logs, page_targets, api_targets, environment_state, evaluation_summary]
+    primary_outputs: [diagnosis_summary, reproduction_steps, diagnostic_evidence, suspected_owner, issue_domain, next_dev_agent]
+    default_next: [backend-development-agent, frontend-development-agent, ui-ux-review-agent, technology-minister-agent]
+
+  - id: host-acceptance-agent
+    file: .trae/agents/development/host-acceptance-agent.md
+    status: active
+    role_type: acceptance
+    workflow_scope: [development_workflow, function_qa_workflow, effect_qa_workflow]
+    layer: workflow
+    primary_inputs: [user_task, evaluation_summary, uiux_result, regression_result, screenshots, environment_state]
+    primary_outputs: [acceptance_passed, acceptance_summary, reroute_target, archive_allowed]
+    default_next: [workflow-archive-report, technology-minister-agent, backend-development-agent, frontend-development-agent, ui-ux-review-agent, regression-validation-agent, optimization-review-agent]
+
+  - id: backend-development-agent
+    file: .trae/agents/development/senior-backend-engineer-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [development_workflow]
+    layer: workflow
+    primary_inputs: [prd, api_model, evaluation_feedback]
+    primary_outputs: [backend_changes, interface_notes, regression_ready]
+    default_next: [frontend-development-agent, regression-validation-agent]
+
+  - id: frontend-development-agent
+    file: .trae/agents/development/frontend-engineer-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [development_workflow]
+    layer: workflow
+    primary_inputs: [prd, ui_structure, api_contract, evaluation_feedback]
+    primary_outputs: [frontend_changes, interaction_notes, review_ready]
+    default_next: [ui-ux-review-agent, regression-validation-agent]
+
+  - id: ui-ux-review-agent
+    file: .trae/agents/development/effect-qa-minister-agent.md
+    status: active
+    role_type: reviewer
+    workflow_scope: [development_workflow, effect_qa_workflow]
+    layer: workflow
+    primary_inputs: [page_implementation, screenshots, review_targets]
+    primary_outputs: [uiux_findings, pass_fail, frontend_reroute]
+    default_next: [frontend-development-agent, regression-validation-agent]
+
+  - id: regression-validation-agent
+    file: .trae/agents/development/function-qa-minister-agent.md
+    status: active
+    role_type: validator
+    workflow_scope: [development_workflow, function_qa_workflow]
+    layer: workflow
+    primary_inputs: [change_scope, api_status, page_status, prior_findings]
+    primary_outputs: [regression_result, fix_backlog, retest_signal]
+    default_next: [host-acceptance-agent, backend-development-agent, frontend-development-agent]
+
+  - id: host-permission-guard-agent
+    file: .trae/agents/guard/site-preflight-legacy-agent.md
+    status: replaced_by_skill
+    role_type: guard
+    workflow_scope: [news_workflow, ecommerce_workflow]
+    layer: legacy
+    primary_inputs: [business_task, bridge_state, session_probe, browser_state]
+    primary_outputs: [guard_decision, block_reason, next_node]
+    default_next: []
+    replaced_by_skill: site-preflight-check
+
+  - id: external-login-recovery-agent
+    file: .trae/agents/guard/site-session-recovery-legacy-agent.md
+    status: replaced_by_skill
+    role_type: recovery
+    workflow_scope: [news_workflow, ecommerce_workflow]
+    layer: legacy
+    primary_inputs: [guard_failure, browser_context, auth_error]
+    primary_outputs: [recovery_steps, retest_condition]
+    default_next: []
+    replaced_by_skill: site-session-recovery
+
+  - id: im-confirmation-agent
+    file: .trae/agents/guard/human-confirmation-legacy-agent.md
+    status: replaced_by_skill
+    role_type: hitl
+    workflow_scope: [news_workflow, ecommerce_workflow, supply_chain_department_workflow, customer_risk_department_workflow]
+    layer: legacy
+    primary_inputs: [current_object, upstream_conclusion, risks, options]
+    primary_outputs: [decision_prompt, release_or_pause, reminder_message]
+    default_next: []
+    replaced_by_skill: human-gate-approval
+
+  - id: news-digest-agent
+    file: .trae/agents/intelligence/intelligence-minister-agent.md
+    status: active
+    role_type: workflow_controller
+    workflow_scope: [news_workflow]
+    layer: workflow
+    primary_inputs: [time_window, login_state, source_list, topic_focus]
+    primary_outputs: [news_plan, next_node, digest_requirements]
+    default_next: [site-preflight-check, site-session-recovery, weread-wechat-digest, human-gate-approval, workflow-archive-report]
+
+  - id: catalog-quality-agent
+    file: .trae/agents/ecommerce/catalog-quality-legacy-agent.md
+    status: replaced_by_skill
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, product_department_workflow]
+    layer: legacy
+    primary_inputs: [catalog_import, header_mapping, batch_info]
+    primary_outputs: [quality_summary, risk_level, continue_flag]
+    default_next: []
+    replaced_by_skill: catalog-import-check
+
+  - id: product-minister-agent
+    file: .trae/agents/ecommerce/product-minister-agent.md
+    status: active
+    role_type: workflow_controller
+    workflow_scope: [product_department_workflow]
+    layer: workflow
+    primary_inputs: [catalog_object, catalog_quality_result, candidate_list, listing_result]
+    primary_outputs: [product_stage, next_node, candidate_confirmation_required, supplier_ready_context]
+    default_next: [catalog-import-check, candidate-discovery-agent, listing-readiness-check, human-gate-approval, supplier-lookup-agent, workflow-archive-report]
+
+  - id: candidate-discovery-agent
+    file: .trae/agents/ecommerce/product-selection-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, product_department_workflow]
+    layer: workflow
+    primary_inputs: [catalog_data, category_distribution, business_focus]
+    primary_outputs: [candidate_list, ranking, reason_summary]
+    default_next: [human-gate-approval, supplier-lookup-agent]
+
+  - id: supplier-lookup-agent
+    file: .trae/agents/ecommerce/supply-chain-minister-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, supply_chain_department_workflow]
+    layer: workflow
+    primary_inputs: [confirmed_candidate, supplier_materials]
+    primary_outputs: [supplier_ranking, cost_range, risk_notes]
+    default_next: [human-gate-approval, creative-strategy-agent]
+
+  - id: creative-strategy-agent
+    file: .trae/agents/ecommerce/content-material-minister-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, content_material_department_workflow]
+    layer: workflow
+    primary_inputs: [confirmed_product_direction, channel_target, style_preference]
+    primary_outputs: [creative_brief, title_copy, detail_page_structure]
+    default_next: [listing-readiness-check, human-gate-approval]
+
+  - id: listing-readiness-agent
+    file: .trae/agents/ecommerce/listing-readiness-legacy-agent.md
+    status: replaced_by_skill
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, product_department_workflow, content_material_department_workflow]
+    layer: legacy
+    primary_inputs: [product_result, supplier_result, creative_result]
+    primary_outputs: [listing_decision, missing_items, risk_summary]
+    default_next: []
+    replaced_by_skill: listing-readiness-check
+
+  - id: exception-order-agent
+    file: .trae/agents/ecommerce/customer-risk-minister-agent.md
+    status: active
+    role_type: worker
+    workflow_scope: [ecommerce_workflow, customer_risk_department_workflow]
+    layer: workflow
+    primary_inputs: [order_exception, logistics_state, handling_history]
+    primary_outputs: [exception_summary, priority, recommended_action]
+    default_next: [human-gate-approval, workflow-archive-report]
+
+  - id: process-archive-agent
+    file: .trae/agents/ecommerce/archive-minister-agent.md
+    status: active
+    role_type: archivist
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, function_qa_workflow, effect_qa_workflow, archive_department_workflow]
+    layer: workflow
+    primary_inputs: [workflow_results, artifacts, decisions, terminal_state]
+    primary_outputs: [archive_policy, archive_summary, asset_index, final_status]
+    default_next: [workflow-archive-report]
+
+  - id: self-optimization-agent
+    file: .trae/agents/optimization/optimization-minister-agent.md
+    status: active
+    role_type: optimizer
+    workflow_scope: [self_optimization_workflow]
+    layer: workflow
+    primary_inputs: [host_feedback, dissatisfaction_points, current_context, prior_review]
+    primary_outputs: [root_cause_summary, impacted_surfaces, change_plan, change_results]
+    default_next: [workflow-log-publish, change-surface-audit, latest-pattern-research, ceo-orchestrator-agent, optimization-review-agent, workflow-archive-report]
+
+  - id: optimization-review-agent
+    file: .trae/agents/optimization/optimization-review-agent.md
+    status: active
+    role_type: reviewer
+    workflow_scope: [self_optimization_workflow]
+    layer: workflow
+    primary_inputs: [host_feedback, change_plan, change_results, research_findings]
+    primary_outputs: [review_scorecard, review_pass_fail, rework_items]
+    default_next: [workflow-log-publish, self-optimization-agent, workflow-archive-report]

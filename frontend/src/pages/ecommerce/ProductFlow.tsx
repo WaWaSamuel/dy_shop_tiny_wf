@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   ReactFlow,
   Background,
@@ -10,7 +10,7 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Typography, Card, Space, Row, Col, Tag, Button, Empty } from 'antd';
+import { Typography, Card, Space, Row, Col, Tag, Button, Empty, Avatar } from 'antd';
 import FlowNode from '@/components/flow/FlowNode';
 import NodeDrawer from '@/components/flow/NodeDrawer';
 import type { FlowNodeData, ImportedCatalogItem, WorkflowAsset, WorkflowStageAsset } from '@/types';
@@ -111,7 +111,6 @@ function buildEdges(steps: WorkflowStageAsset[]): Edge[] {
 }
 
 export default function ProductFlow() {
-  const navigate = useNavigate();
   const { id } = useParams();
   const decodedId = useMemo(() => decodeURIComponent(id || ''), [id]);
 
@@ -188,7 +187,7 @@ export default function ProductFlow() {
           description="没有找到对应货品的工作流资产"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
-          <Button type="primary" onClick={() => navigate('/project/ecommerce/products')}>
+          <Button type="primary" onClick={() => window.location.assign('/project/ecommerce/products')}>
             返回货盘
           </Button>
         </Empty>
@@ -218,7 +217,7 @@ export default function ProductFlow() {
                   {selectedCatalogItem.shopName} · {selectedCatalogItem.sku} · {selectedCatalogItem.category}
                 </Text>
               </div>
-              <Text type="secondary">{selectedAsset.summary}</Text>
+              <Text type="secondary" style={{ lineHeight: 1.7 }}>{selectedAsset.summary}</Text>
               <Space size={[8, 8]} wrap>
                 <Tag>当前节点：{currentStageLabel}</Tag>
                 <Tag>已完成：{completedCount}/{flowStages.length}</Tag>
@@ -228,21 +227,74 @@ export default function ProductFlow() {
             </Space>
           </Col>
           <Col xs={24} lg={9}>
-            <Space direction="vertical" size={10} style={{ width: '100%' }}>
-              <Button
-                  icon={<StickerIcon src={stickers.actions.prev} alt="返回货盘" size="sm" />}
-                onClick={() => navigate('/project/ecommerce/products')}
-              >
-                返回货盘
-              </Button>
-              <Text type="secondary">
-                这是一份和货品绑定的工作流资产。后续抖掌柜导入 list 时，通过 `catalogKey` 自动关联回来。
-              </Text>
-              <Text type="secondary">资产ID：{selectedAsset.id}</Text>
-            </Space>
+            <Card size="small" className="result-mini-card" bordered={false}>
+              <Space align="start" size={12}>
+                <Avatar
+                  shape="square"
+                  size={56}
+                  src={stickers.dashboard.ecommerce}
+                  style={{ borderRadius: 20, background: 'linear-gradient(135deg, rgba(255,238,244,0.98), rgba(242,249,255,0.96))', padding: 8 }}
+                />
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Text strong>轨迹摘要</Text>
+                  <Text type="secondary" style={{ lineHeight: 1.65 }}>
+                    这是一份和货品绑定的结果轨迹，用来回看当前走到了哪一步、哪里需要继续跟进。
+                  </Text>
+                  <div className="overview-action-grid" style={{ gridTemplateColumns: '1fr' }}>
+                    <a className="result-nav-button result-nav-button--primary" href="/project/ecommerce/products">
+                      <img src={stickers.actions.prev} alt="" />
+                      <span>返回货盘结果页</span>
+                    </a>
+                  </div>
+                  <Text type="secondary">资产ID：{selectedAsset.id}</Text>
+                </Space>
+              </Space>
+            </Card>
           </Col>
         </Row>
       </Card>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card className="stats-glass-card">
+            <div className="metric-strip">
+              <div className="metric-badge">
+                <StickerIcon src={stickers.metrics.workflow} alt="当前阶段" size="lg" />
+              </div>
+              <div>
+                <Text type="secondary">当前阶段</Text>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>{currentStageLabel}</div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="stats-glass-card">
+            <div className="metric-strip">
+              <div className="metric-badge">
+                <StickerIcon src={stickers.metrics.pending} alt="待跟进节点" size="lg" />
+              </div>
+              <div>
+                <Text type="secondary">待跟进节点</Text>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>{Math.max(flowStages.length - completedCount, 0)}</div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="stats-glass-card">
+            <div className="metric-strip">
+              <div className="metric-badge">
+                <StickerIcon src={stickers.metrics.imported} alt="结果完成度" size="lg" />
+              </div>
+              <div>
+                <Text type="secondary">结果完成度</Text>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>{Math.round((completedCount / Math.max(flowStages.length, 1)) * 100)}%</div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
       <div style={{ height: 'calc(100vh - 320px)', minHeight: 560, display: 'flex', flexDirection: 'column' }}>
         <Card style={{ flex: 1, overflow: 'hidden' }} bodyStyle={{ padding: 0, height: '100%' }}>

@@ -619,6 +619,32 @@ class FeishuBotService:
             "message_id": getattr(getattr(response, "data", None), "message_id", None),
         }
 
+    async def push_info_card(
+        self,
+        *,
+        title: str,
+        lines: list[str],
+        template: str = "orange",
+        open_id: Optional[str] = None,
+        chat_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        receive_id_type, receive_id, target_hint = self.resolve_push_target(
+            open_id=open_id,
+            chat_id=chat_id,
+        )
+        reply = self.build_info_card(title=title, lines=lines, template=template)
+        response = await self.send_message(
+            receive_id_type=receive_id_type,
+            receive_id=receive_id,
+            reply=reply,
+        )
+        return {
+            "receive_id_type": receive_id_type,
+            "receive_id": receive_id,
+            "target_hint": target_hint,
+            "message_id": getattr(getattr(response, "data", None), "message_id", None),
+        }
+
     def build_news_card(
         self,
         *,

@@ -14,7 +14,15 @@
 
 ## 启动
 
-在仓库根目录执行：
+默认推荐直接在仓库根目录执行：
+
+```bash
+./run.sh dev
+```
+
+这会同时拉起 Docker 内主工程，并自动初始化 / 启动宿主机 bridge。
+
+如果只是单独调试 bridge，再手动执行：
 
 ```bash
 python3 -m venv .venv-bridge
@@ -23,16 +31,13 @@ pip install -r bridge/requirements.txt
 uvicorn bridge.app:app --host 127.0.0.1 --port 8765 --reload
 ```
 
-主工程仍然正常启动：
+仅查看或单独控制 bridge 时，可使用：
 
 ```bash
-make start
+./run.sh bridge-start
+./run.sh bridge-stop
+./run.sh bridge-logs
 ```
-
-也就是两部分：
-
-1. Docker 内主工程
-2. 宿主机本地 bridge
 
 ## 环境变量
 

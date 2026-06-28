@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db, get_read_db
+from app.api.deps import get_current_ecommerce_user_id, get_db, get_read_db
 
 router = APIRouter()
 
@@ -85,7 +85,7 @@ async def list_products(
     category: Optional[str] = None,
     search: Optional[str] = None,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """List products for the authenticated user with filtering and pagination."""
     # Build query dynamically
@@ -128,7 +128,7 @@ async def list_products(
 async def get_product(
     product_id: UUID,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get a single product by ID."""
     from sqlalchemy import text
@@ -145,7 +145,7 @@ async def get_product(
 async def create_product(
     payload: ProductCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Create a new product."""
     from sqlalchemy import text
@@ -172,7 +172,7 @@ async def update_product(
     product_id: UUID,
     payload: ProductUpdate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Partially update a product."""
     from sqlalchemy import text
@@ -201,7 +201,7 @@ async def update_product(
 async def delete_product(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Delete a product (soft-delete by setting status to archived)."""
     from sqlalchemy import text

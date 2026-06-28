@@ -1,0 +1,61 @@
+workflow_id: supply_chain_department_workflow
+name: 电商供应链部工作流
+description: >
+  用于 1688 货源查询、供应商比价、成本和物流风险判断。
+  它是 `ecommerce_workflow` 内部的供应链 SOP。
+
+department: 电商部门 / 供应链部
+parent_workflow: ecommerce_workflow
+minister_role: supplier-lookup-agent
+
+entry_rules:
+  - parent_workflow == "ecommerce_workflow"
+  - task_domain in ["supplier", "1688", "sourcing", "price_compare"]
+
+workflow_controller: ecommerce-orchestrator-agent
+
+state_schema:
+  - confirmed_candidate
+  - supplier_result
+  - cost_range
+  - logistics_risk
+  - supplier_decision
+
+roles:
+  - key: supply_chain_minister
+    agent: supplier-lookup-agent
+    responsibility: 供应商查询、比价、成本与物流风险判断
+  - key: supplier_human_gate
+    skill: human-gate-approval
+    responsibility: 供应商关键选择需宿主确认时暂停
+
+nodes:
+  - key: supplier_lookup
+    agent: supplier-lookup-agent
+    role: supply_chain_minister
+  - key: human_gate
+    skill: human-gate-approval
+    role: supplier_human_gate
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: supplier_lookup
+    to: human_gate
+    when: supplier_confirmation_required == true
+    input: [supplier_result, cost_range, logistics_risk]
+    output: [decision_prompt]
+  - from: supplier_lookup
+    to: archive
+    when: supplier_confirmation_required != true
+    input: [supplier_result, cost_range, logistics_risk]
+    output: [archive_record]
+  - from: human_gate
+    to: archive
+    when: decision in ["continue_to_creative", "pause", "cancel", "change_plan"]
+    input: [decision, supplier_result]
+    output: [archive_record]
+
+success_criteria:
+  - supplier_result is not null

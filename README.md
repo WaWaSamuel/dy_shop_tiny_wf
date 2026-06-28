@@ -249,15 +249,58 @@ POST /api/v1/feishu/news/push
 Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
 ```
 
-## 7. 常见问题
+## 7. 开发态联调 fallback
 
-### 7.1 `docker: command not found`
+当 `DEBUG=true` 且请求未携带 Bearer Token 时，`/api/v1/ecommerce/*` 相关接口会自动回退到固定开发用户：
+
+```text
+demo-ecommerce-user
+```
+
+这样前端或 mock 工具在本地联调时，无需先走登录流程也可以访问电商工作台相关接口。
+
+注意：
+
+- 该 fallback 仅对 ecommerce 路由生效。
+- 只有在 `DEBUG=true` 且“缺少 token”时才会触发；无效或过期 token 仍会返回 401。
+- 生产环境应保持 `DEBUG=false`，并始终通过真实登录态访问接口。
+
+## 8. 当前编排落地
+
+当前项目已经把旧的编排图收敛到 `.trae/` 规范与最新的 `agents-readme-report/agents-readme-report.html`。代码侧落地的不是应用内 agent runtime，而是“业务动作接口、结果展示模型、守门结果和工作流状态”。
+
+第一批已接通的接口：
+
+```text
+GET  /api/v1/ecommerce/orchestration/guard-status
+POST /api/v1/ecommerce/orchestration/catalog-quality
+POST /api/v1/ecommerce/orchestration/candidate-discovery
+POST /api/v1/ecommerce/sourcing/compare
+POST /api/v1/ecommerce/creative/mock-generate
+```
+
+对应页面：
+
+- `Products`：展示守门状态、运行货盘质检、扫描候选品
+- `Sourcing`：通过后端接口做比价与推荐
+- `CreativeStudio`：通过后端 mock 接口生成素材版本
+
+当前定位：
+
+- `guard-status`：对应 V2 图里的守门层
+- `catalog-quality`、`candidate-discovery`：对应电商主链前半段
+- `sourcing/compare`：对应比价节点
+- `creative/mock-generate`：对应素材节点的开发态 mock
+
+## 9. 常见问题
+
+### 9.1 `docker: command not found`
 
 说明 Docker Desktop 尚未安装，直接从官网下载安装：
 
 `https://www.docker.com/products/docker-desktop/`
 
-### 7.2 `Cannot connect to the Docker daemon`
+### 9.2 `Cannot connect to the Docker daemon`
 
 说明 Docker Desktop 还没启动完成。请先打开 Docker Desktop，并等待状态变为 Running，再重新执行：
 
@@ -265,7 +308,7 @@ Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
 ./run.sh dev
 ```
 
-### 7.3 端口被占用
+### 9.3 端口被占用
 
 本项目默认使用这些端口：
 
@@ -276,11 +319,11 @@ Header: X-Feishu-Bot-Token: $FEISHU_BOT_PUSH_TOKEN
 
 如果端口冲突，请先停止本机已有服务，或修改 `docker-compose.yml` 里的端口映射。
 
-### 7.4 首次启动较慢
+### 9.4 首次启动较慢
 
 首次启动会下载镜像并构建依赖，速度取决于网络环境和本机性能。后续启动会快很多。
 
-## 8. 推荐启动方式
+## 10. 推荐启动方式
 
 在 macOS 上，推荐直接使用下面这套流程：
 

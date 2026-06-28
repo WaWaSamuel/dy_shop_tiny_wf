@@ -79,10 +79,10 @@ redis-shell: ## 进入 Redis Shell
 # ==================== 测试 ====================
 
 test: ## 运行后端测试
-	cd backend && pytest -v
+	cd backend && python3 -m pytest -v
 
 test-cov: ## 运行测试 (含覆盖率)
-	cd backend && pytest --cov=app --cov-report=html
+	cd backend && python3 -m pytest --cov=app --cov-report=html
 
 # ==================== 代码质量 ====================
 

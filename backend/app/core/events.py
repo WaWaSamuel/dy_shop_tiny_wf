@@ -2,9 +2,10 @@
 
 import logging
 
-from app.core.database import close_engines
+from app.core.database import close_engines, write_engine
 from app.core.redis import close_redis_pool, get_redis_pool
 from app.services.feishu_bot import get_feishu_bot_service
+from app.services.runtime_center import ensure_runtime_center_schema, load_local_agents_log_records
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,10 @@ logger = logging.getLogger(__name__)
 async def on_startup() -> None:
     """Execute tasks on application startup."""
     logger.info("Starting up application...")
+    await ensure_runtime_center_schema(write_engine)
+    logger.info("Runtime execution center schema ensured.")
+    agents_log_result = await load_local_agents_log_records(write_engine)
+    logger.info("Local agents log loaded: %s", agents_log_result)
     # Eagerly initialize Redis pool to surface connection errors early
     redis = await get_redis_pool()
     await redis.ping()

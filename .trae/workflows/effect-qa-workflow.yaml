@@ -1,0 +1,57 @@
+workflow_id: effect_qa_workflow
+name: 技术开发部门效果 QA 工作流
+description: >
+  用于 UI/UX review、展示效果、交互体验和宿主验收。它是
+  `development_workflow` 内部的效果 QA SOP。
+
+department: 技术开发部门 / 效果 QA
+parent_workflow: development_workflow
+minister_role: ui-ux-review-agent
+
+entry_rules:
+  - parent_workflow == "development_workflow"
+  - task_domain in ["uiux", "effect_qa", "visual_review", "interaction_review"]
+
+workflow_controller: ui-ux-review-agent
+
+state_schema:
+  - page_implementation
+  - screenshots
+  - uiux_findings
+  - host_acceptance_result
+  - frontend_reroute
+
+roles:
+  - key: effect_qa_minister
+    agent: ui-ux-review-agent
+    responsibility: 展示效果、交互体验、UI/UX 问题发现
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    responsibility: 宿主视角验收与是否收口判断
+
+nodes:
+  - key: uiux_review
+    agent: ui-ux-review-agent
+    role: effect_qa_minister
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    role: host_acceptance
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: uiux_review
+    to: host_acceptance
+    when: uiux_passed == true
+    input: [uiux_findings, page_implementation]
+    output: [host_acceptance_request]
+  - from: host_acceptance
+    to: archive
+    when: acceptance_passed == true
+    input: [uiux_findings, host_acceptance_result]
+    output: [archive_record]
+
+success_criteria:
+  - uiux_passed == true
+  - acceptance_passed == true

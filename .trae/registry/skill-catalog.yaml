@@ -1,0 +1,79 @@
+version: 1
+catalog_name: DYShop TRAE Work Skill Catalog
+description: >
+  统一登记当前项目里承载检查型、动作型、模板型、归档型能力的 skills。
+
+skills:
+  - id: weread-wechat-digest
+    file: .trae/skills/weread-wechat-digest/SKILL.md
+    status: active
+    role_type: execution_skill
+    workflow_scope: [news_workflow]
+    replaces_agents: []
+
+  - id: human-gate-approval
+    file: .trae/skills/human-gate-approval/SKILL.md
+    status: active
+    role_type: hitl_skill
+    workflow_scope: [news_workflow, ecommerce_workflow, supply_chain_department_workflow, customer_risk_department_workflow]
+    replaces_agents: [im-confirmation-agent]
+
+  - id: workflow-archive-report
+    file: .trae/skills/workflow-archive-report/SKILL.md
+    status: active
+    role_type: archive_skill
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, function_qa_workflow, effect_qa_workflow, archive_department_workflow]
+    replaces_agents: []
+
+  - id: site-preflight-check
+    file: .trae/skills/site-preflight-check/SKILL.md
+    status: active
+    role_type: guard_skill
+    workflow_scope: [news_workflow, ecommerce_workflow]
+    replaces_agents: [host-permission-guard-agent]
+
+  - id: site-session-recovery
+    file: .trae/skills/site-session-recovery/SKILL.md
+    status: active
+    role_type: recovery_skill
+    workflow_scope: [news_workflow, ecommerce_workflow]
+    replaces_agents: [external-login-recovery-agent]
+
+  - id: catalog-import-check
+    file: .trae/skills/catalog-import-check/SKILL.md
+    status: active
+    role_type: validation_skill
+    workflow_scope: [ecommerce_workflow, product_department_workflow]
+    replaces_agents: [catalog-quality-agent]
+
+  - id: listing-readiness-check
+    file: .trae/skills/listing-readiness-check/SKILL.md
+    status: active
+    role_type: validation_skill
+    workflow_scope: [ecommerce_workflow, product_department_workflow, content_material_department_workflow]
+    replaces_agents: [listing-readiness-agent]
+
+  - id: change-surface-audit
+    file: .trae/skills/change-surface-audit/SKILL.md
+    status: active
+    role_type: audit_skill
+    workflow_scope: [self_optimization_workflow]
+
+  - id: latest-pattern-research
+    file: .trae/skills/latest-pattern-research/SKILL.md
+    status: active
+    role_type: research_skill
+    workflow_scope: [self_optimization_workflow]
+
+  - id: workflow-log-publish
+    file: .trae/skills/workflow-log-publish/SKILL.md
+    status: active
+    role_type: log_skill
+    workflow_scope: [self_optimization_workflow]
+
+  - id: agents-log
+    file: .trae/skills/agents-log/SKILL.md
+    status: active
+    role_type: log_skill
+    workflow_scope: [ceo_orchestration_workflow, development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow]
+    replaces_agents: []

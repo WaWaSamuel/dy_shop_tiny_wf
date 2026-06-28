@@ -1,0 +1,43 @@
+workflow_id: ceo_orchestration_workflow
+name: CEO 总经理分流工作流
+description: >
+  用于新任务入口判断、一级选流、跨部门调度和边界澄清。它不是业务执行流，
+  只负责把任务派发到正确的一级 workflow 或部门 SOP。
+
+department: CEO / 总经理
+minister_role: ceo-orchestrator-agent
+
+entry_rules:
+  - any_new_project_task == true
+
+workflow_controller: ceo-orchestrator-agent
+
+state_schema:
+  - user_task
+  - domain_classification
+  - selected_primary_workflow
+  - selected_department_workflow
+  - boundary_status
+
+roles:
+  - key: ceo_minister
+    agent: ceo-orchestrator-agent
+    responsibility: 一级选流、跨部门调度、边界澄清
+
+nodes:
+  - key: classify_and_route
+    agent: ceo-orchestrator-agent
+    role: ceo_minister
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: classify_and_route
+    to: archive
+    when: boundary_status in ["blocked", "out_of_scope", "completed_routing"]
+    input: [user_task, selected_primary_workflow, selected_department_workflow, boundary_status]
+    output: [archive_record]
+
+success_criteria:
+  - selected_primary_workflow is not null or boundary_status in ["blocked", "out_of_scope"]

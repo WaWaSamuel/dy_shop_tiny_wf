@@ -1,0 +1,212 @@
+workflow_id: self_optimization_workflow
+name: 自我优化工作流
+description: >
+  用于当宿主明确表达对当前方案、实现或体验不满意时，触发一条围绕问题定位、
+  最新范式研究、方案设计、升级改造、review 评分与继续 loop 的闭环工作流。
+  该工作流默认不依赖人工干预；若涉及代码改造，由本工作流整理需求后强制 handoff 给 `development_workflow` 执行。
+  它的职责不是直接替代开发流，而是先约束痛点定义、影响面、loop 与 review，再推动完整闭环。
+
+department: 优化部门
+minister_role: self-optimization-agent
+
+entry_rules:
+  - host_feedback contains one of ["不满意", "有问题", "再优化", "还不对", "继续改", "升级", "优化一下", "重构一下", "体验不好", "方案不行"]
+  - host_feedback contains one of ["为什么没有", "没走到", "没有走到", "没按规则", "角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致", "编排资产不准"]
+  - task_domain in ["self_optimization", "framework_refactor", "host_feedback", "system_upgrade"]
+
+workflow_controller: self-optimization-agent
+
+execution_constraints:
+  - 进入本 workflow 后，第一个可见节点必须是 `diagnose`，`acting_agent` 必须是 `self-optimization-agent`
+  - 每个节点输出必须包含 `acting_agent`、`current_node`、`workflow_edge`、`next_required_node` 和本节点可写状态；缺少这些字段时视为自优化流证据不足
+  - 不允许只口头声明“进入自我优化流”后直接做普通文件排查；必须先由 `self-optimization-agent` 完成痛点 intake 和问题定义
+  - 宿主反馈只涉及 Web 页面视觉错乱、CSS、布局、遮挡、图片或文字重叠、路由页面展示异常、浏览器可见 UI bug 时，不得进入本 workflow；必须回到 `development_workflow`
+  - "只有当 `self-optimization-agent` 明确产出 `systemic_optimization_required == true` 且 `audit_required == true`，并且问题涉及 registry、workflow、agent、skill、tool、prompt、规则执行或闭环一致性时，才允许经过 `change-surface-audit`"
+  - "`change-surface-audit` 只能作为自优化流内的项目影响面审计 skill 使用，不得被普通开发流、页面样式修复或单点 bug 排查直接调用"
+  - "`review_passed` 只能由 `optimization-review-agent` 在 `review` 节点产出；`host_requirements_satisfied` 不能由开发或文件排查摘要代写"
+  - 若需要代码改造，`development_acceptance_passed` 只能来自 `host-acceptance-agent` 的验收通过结果
+
+state_schema:
+  - host_feedback
+  - trigger_keywords
+  - dissatisfaction_points
+  - optimization_goal
+  - acting_agent
+  - current_node
+  - workflow_edge
+  - next_required_node
+  - target_agent
+  - target_agent_file
+  - target_agent_loaded
+  - role_execution_trace
+  - node_completion_sources
+  - impacted_surfaces
+  - systemic_optimization_required
+  - audit_required
+  - visual_ui_bug_only
+  - critical_scope_missing
+  - root_cause_summary
+  - latest_patterns
+  - needs_code_change
+  - change_scope
+  - change_plan
+  - development_request
+  - development_workflow_completed
+  - development_completion_source
+  - development_acceptance_source
+  - development_role_execution_trace
+  - development_required_trace
+  - development_results
+  - change_results
+  - review_scorecard
+  - rework_items
+  - host_requirements_satisfied
+  - review_history
+  - intake_log_written
+  - review_log_written
+  - log_records
+  - loop_round
+  - max_rounds
+  - final_status
+  - routing_error_detected
+  - handoff_required
+  - development_handoff_completed
+  - development_acceptance_passed
+
+roles:
+  - key: optimization_minister
+    agent: self-optimization-agent
+    responsibility: 痛点 intake、问题定义、根因判断、跨部门调度与改造推进
+  - key: surface_auditor
+    skill: change-surface-audit
+    responsibility: 仅在系统性优化问题中扫描 registry、workflow、agent、skill、tool、prompt、代码和展示层影响面
+  - key: pattern_researcher
+    skill: latest-pattern-research
+    responsibility: 最新范式研究与可采用方案判断
+  - key: optimization_reviewer
+    agent: optimization-review-agent
+    responsibility: 评分卡 review、打回、继续 loop 或收口判断
+
+nodes:
+  - key: diagnose
+    agent: self-optimization-agent
+    role: optimizer
+  - key: log_feedback
+    skill: workflow-log-publish
+    role: log_skill
+  - key: surface_audit
+    skill: change-surface-audit
+    role: audit_skill
+  - key: pattern_research
+    skill: latest-pattern-research
+    role: research_skill
+  - key: redesign_and_apply
+    agent: self-optimization-agent
+    role: optimizer
+  - key: handoff_development
+    agent: ceo-orchestrator-agent
+    role: global_orchestrator
+  - key: review
+    agent: optimization-review-agent
+    role: reviewer
+  - key: log_round_result
+    skill: workflow-log-publish
+    role: log_skill
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: diagnose
+    to: log_feedback
+    when: optimization_goal is not null
+    input: [host_feedback, dissatisfaction_points]
+    output: [intake_log_payload]
+
+  - from: log_feedback
+    to: surface_audit
+    when: intake_log_written == true and systemic_optimization_required == true and audit_required == true and visual_ui_bug_only != true
+    input: [intake_log_payload]
+    output: [audit_request]
+
+  - from: surface_audit
+    to: pattern_research
+    when: impacted_surfaces is not null
+    input: [impacted_surfaces, root_cause_summary]
+    output: [research_request]
+
+  - from: pattern_research
+    to: redesign_and_apply
+    when: latest_patterns is not null
+    input: [latest_patterns, impacted_surfaces, optimization_goal]
+    output: [change_plan_request]
+
+  - from: redesign_and_apply
+    to: handoff_development
+    when: needs_code_change == true and development_request is not null
+    input: [change_plan, development_request, change_scope]
+    output: [development_handoff]
+
+  - from: handoff_development
+    to: review
+    when: development_workflow_completed == true and development_acceptance_passed == true and development_acceptance_source == "host-acceptance-agent"
+    input: [development_results, development_role_execution_trace, change_plan]
+    output: [review_request]
+
+  - from: redesign_and_apply
+    to: review
+    when: needs_code_change != true and change_results is not null
+    input: [change_plan, change_results]
+    output: [review_request]
+
+  - from: review
+    to: log_round_result
+    when: review_scorecard is not null
+    input: [review_scorecard, change_results]
+    output: [review_log_payload]
+
+  - from: log_round_result
+    to: redesign_and_apply
+    when: review_passed == false and loop_round < max_rounds and review_log_written == true
+    input: [review_scorecard, rework_items]
+    output: [next_round_change_plan]
+
+  - from: log_round_result
+    to: archive
+    when: review_passed == true and host_requirements_satisfied == true and review_log_written == true
+    input: [change_results, review_scorecard]
+    output: [archive_record]
+
+success_criteria:
+  - role_execution_trace includes "self-optimization-agent"
+  - review_passed != true or node_completion_sources.review_passed == "optimization-review-agent"
+  - review_passed == true
+  - host_requirements_satisfied == true
+  - review_log_written == true
+  - final_status in ["optimized", "accepted"]
+  - needs_code_change != true or development_handoff_completed == true
+  - needs_code_change != true or development_acceptance_passed == true
+  - needs_code_change != true or development_acceptance_source == "host-acceptance-agent"
+  - needs_code_change != true or development_role_execution_trace includes ["technology-minister-agent", "regression-validation-agent", "host-acceptance-agent"]
+
+failure_policy:
+  - if optimization_goal is null: stay_at_diagnose
+  - if acting_agent is null or current_node is null or workflow_edge is null or next_required_node is null: mark_as_workflow_violation_and_reroute_to_diagnose
+  - if current_node == "diagnose" and acting_agent != "self-optimization-agent": mark_as_workflow_violation_and_reroute_to_diagnose
+  - if visual_ui_bug_only == true: reroute_to_development_workflow
+  - if host_feedback contains one of ["不满意", "为什么没有", "没走到", "没有走到", "没按规则", "角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致"] and role_execution_trace missing "self-optimization-agent": reroute_to_diagnose
+  - if host_feedback contains one of ["角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致", "编排资产不准"] and systemic_optimization_required == true and audit_required == true and impacted_surfaces is null: reroute_to_surface_audit
+  - if current_node == "surface_audit" and systemic_optimization_required != true: mark_as_workflow_violation_and_reroute_to_development_workflow
+  - if current_node == "surface_audit" and audit_required != true: mark_as_workflow_violation_and_reroute_to_diagnose
+  - if intake_log_written != true: retry_log_feedback
+  - if review_log_written != true: retry_log_round_result
+  - if review_passed == true and node_completion_sources.review_passed != "optimization-review-agent": clear_review_passed_and_reroute_to_review
+  - if routing_error_detected == true: stay_at_diagnose_and_redefine_problem
+  - if needs_code_change == true and development_request is null: retry_redesign_and_apply
+  - if needs_code_change == true and development_handoff_completed != true: stay_at_handoff_development
+  - if needs_code_change == true and development_role_execution_trace missing ["technology-minister-agent", "regression-validation-agent", "host-acceptance-agent"]: stay_at_handoff_development_and_require_development_trace
+  - if development_acceptance_passed == true and development_acceptance_source != "host-acceptance-agent": clear_development_acceptance_and_reroute_to_development_workflow
+  - if development_workflow_completed == true and development_completion_source not in ["workflow-archive-report", "development_workflow.archive"]: clear_development_completion_and_reroute_to_development_workflow
+  - if development_workflow_completed == true and development_acceptance_passed != true: reroute_to_development_workflow
+  - if loop_round >= max_rounds and review_passed == false: archive_as_not_resolved
+  - if critical_scope_missing == true: reroute_to_surface_audit

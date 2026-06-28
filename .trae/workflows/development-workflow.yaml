@@ -1,0 +1,290 @@
+workflow_id: development_workflow
+name: 开发工作流
+description: >
+  用于问题反馈、页面、接口、联调、修复、回归和验收类任务。该工作流的关键约束是：
+  只有当回归和宿主验收都通过时才允许收口；`technology-minister-agent` 负责入口评估与开发分派，
+  `issue-diagnosis-agent` 负责问题复现、证据收集和技术归因，
+  `host-acceptance-agent` 负责最终宿主验收。
+  生产构建、语法编译、lint 或单点接口探测只属于开发自检证据，不是 QA 通过，也不是工作流终态。
+  若由 `self_optimization_workflow` handoff 进入，本工作流负责执行结构化代码改造请求，并把结果回流给自我优化流做最终 review。
+  它不能吞掉原始痛点问题，也不能替宿主对“为什么没按规则工作”这类系统性问题直接收口。
+  本工作流在开发测试时必须严格使用宿主白名单命令：`sh run.sh` 启动项目、`sh stop.sh` 关闭项目。
+
+department: 技术开发部门
+minister_role: technology-minister-agent
+child_department_workflows:
+  - function_qa_workflow
+  - effect_qa_workflow
+
+entry_rules:
+  - task_domain in ["frontend", "backend", "integration", "qa", "regression", "ux_fix", "bug", "problem_feedback", "issue_diagnosis"]
+  - user_goal contains one of ["修复", "联调", "回归", "测评", "页面改造", "接口改造", "排查", "定位问题", "问题反馈", "bug", "报错", "异常", "CSS", "样式", "布局", "遮挡", "重叠", "页面错乱"]
+  - user_goal contains one of ["新增 Web 页面", "导航入口", "可视化面板", "管理台", "展示台", "ReactFlow", "节点图", "编排资产可视化"]
+  - user_goal contains one of ["查看 agent", "查看 workflow", "查看 skill", "查看 tool", "可视化 .trae", "编排情况"]
+  - upstream_workflow == "self_optimization_workflow"
+
+entry_guardrails:
+  - if host_feedback contains one of ["痛点", "不满意", "有问题", "没按规则执行", "没走到预期工作流", "没有闭环完成"] and upstream_workflow != "self_optimization_workflow": reject_and_reroute_to_self_optimization_workflow
+  - if task_origin == "system_constraint_failure": reject_as_first_hop_and_reroute_to_self_optimization_workflow
+  - if host_feedback contains one of ["页面错乱", "CSS", "样式异常", "布局遮挡", "文字重叠", "图片遮挡", "路由页面异常"] and task_origin != "system_constraint_failure": accept_as_development_problem_feedback
+
+execution_constraints:
+  - 开发测试启动项目时，只允许使用 `sh run.sh`
+  - 开发测试关闭项目时，只允许使用 `sh stop.sh`
+  - 不允许为了图省事直接使用 `npm run dev`、`vite`、`python -m`、`uvicorn`、`docker compose up/down` 等旁路命令启动或关闭当前项目
+  - 不允许另开一套临时开发环境替代宿主项目环境
+  - 普通 Web 页面渲染、CSS、布局、遮挡、重叠、路由展示异常属于开发问题反馈，不得直接调用 `change-surface-audit`
+  - 若 `sh run.sh` 或 `sh stop.sh` 执行异常，必须先记录阻断，再回流处理脚本或环境问题，不能私自切换到其他启动方式
+  - 生产构建、语法编译、lint、py_compile、单点接口探测通过，只能标记为 `build_result` / `compile_result`，不得直接作为收口依据
+  - 只要本轮有代码、接口、路由、页面、交互或数据聚合改动，`qa_required` 必须为 true，并且必须继续进入 UI/UX review、功能回归和宿主验收
+  - 每个节点输出必须包含 `acting_agent`、`current_node`、`workflow_edge`、`next_required_node` 和本节点可写状态；缺少这些字段时视为开发流证据不足
+  - 进入任意非入口节点前，必须通过 `.trae/registry/agent-catalog.yaml` 找到目标 agent 文件并读取；未读取目标 agent 文档时，不允许执行该节点动作
+  - 后端、前端和诊断节点只能产出交给 QA 的 `regression_scope` / `uiux_feedback` / handoff 包，不得自行执行“功能回归”“QA 校验”“宿主验收”动作
+  - 任何可见执行摘要中出现“功能回归”“QA 校验”“回归结果”时，`acting_agent` 必须是 `regression-validation-agent` 且 `current_node` 必须是 `regression`
+  - 任何可见执行摘要中出现“UI/UX review”“效果 QA”“体验评审”时，`acting_agent` 必须是 `ui-ux-review-agent` 且 `current_node` 必须是 `uiux_review`
+  - 任何可见执行摘要中出现“宿主验收”“最终验收”“是否可收口”时，`acting_agent` 必须是 `host-acceptance-agent` 且 `current_node` 必须是 `host_acceptance`
+  - "`technology-minister-agent` 只能产出入口评估、分派和回流判断，不得直接替代后端、前端、UI/UX、功能 QA 或宿主验收执行对应节点"
+  - "`regression_passed` 只能由 `regression-validation-agent` 在 `regression` 节点产出；`uiux_passed` 只能由 `ui-ux-review-agent` 在 `uiux_review` 节点产出；`acceptance_passed` 只能由 `host-acceptance-agent` 在 `host_acceptance` 节点产出"
+  - "`development_workflow_completed` 只能在 `host-acceptance-agent` 输出 `acceptance_passed == true` 后，由 `archive` 或回流摘要标记为 true"
+
+workflow_controller: technology-minister-agent
+
+state_schema:
+  - input_type
+  - task_brief
+  - problem_report
+  - page_targets
+  - api_targets
+  - issue_domain
+  - code_changed
+  - acting_agent
+  - current_node
+  - workflow_edge
+  - next_required_node
+  - target_agent
+  - target_agent_file
+  - target_agent_loaded
+  - role_execution_trace
+  - node_completion_sources
+  - current_round
+  - evaluation_summary
+  - diagnosis_summary
+  - reproduction_steps
+  - diagnostic_evidence
+  - suspected_owner
+  - backend_change_notes
+  - frontend_change_notes
+  - build_result
+  - compile_result
+  - uiux_required
+  - uiux_passed
+  - uiux_result
+  - regression_passed
+  - regression_result
+  - acceptance_passed
+  - acceptance_result
+  - qa_required
+  - development_acceptance_passed
+  - development_workflow_completed
+  - development_acceptance_source
+  - development_completion_source
+  - development_results
+  - pass_flags
+
+roles:
+  - key: technology_minister
+    agent: technology-minister-agent
+    responsibility: 开发任务入口评估、问题归属判断、开发与 QA 分派
+  - key: issue_diagnostician
+    agent: issue-diagnosis-agent
+    responsibility: 问题复现、证据收集、技术归因和下一跳建议
+  - key: backend_engineer
+    agent: backend-development-agent
+    responsibility: 后端接口、服务、数据聚合与状态逻辑
+  - key: frontend_engineer
+    agent: frontend-development-agent
+    responsibility: 前端页面、交互、联调与展示实现
+  - key: function_qa_department
+    workflow: function_qa_workflow
+    responsibility: 功能正确性、接口流程、回归验证
+  - key: effect_qa_department
+    workflow: effect_qa_workflow
+    responsibility: UI/UX、展示效果、交互体验 review
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    responsibility: 宿主视角最终验收、是否允许收口或回流
+
+nodes:
+  - key: evaluate
+    agent: technology-minister-agent
+    role: evaluator
+  - key: issue_diagnosis
+    agent: issue-diagnosis-agent
+    role: diagnostician
+  - key: backend_fix
+    agent: backend-development-agent
+    role: worker
+  - key: frontend_fix
+    agent: frontend-development-agent
+    role: worker
+  - key: uiux_review
+    agent: ui-ux-review-agent
+    role: reviewer
+  - key: regression
+    agent: regression-validation-agent
+    role: validator
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    role: acceptance
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: evaluate
+    to: issue_diagnosis
+    when: input_type == "problem_feedback" or issue_domain in ["unknown", "bug", "needs_diagnosis"] or problem_report is not null
+    input: [evaluation_summary, problem_report, page_targets, api_targets]
+    output: [diagnosis_summary, reproduction_steps, diagnostic_evidence, suspected_owner, issue_domain]
+
+  - from: evaluate
+    to: backend_fix
+    when: issue_domain in ["backend", "fullstack"]
+    input: [evaluation_summary, api_targets]
+    output: [backend_change_plan]
+
+  - from: evaluate
+    to: frontend_fix
+    when: issue_domain == "frontend"
+    input: [evaluation_summary, page_targets]
+    output: [frontend_change_plan]
+
+  - from: issue_diagnosis
+    to: backend_fix
+    when: suspected_owner == "backend-development-agent" or issue_domain in ["backend", "fullstack"]
+    input: [diagnosis_summary, reproduction_steps, diagnostic_evidence, api_targets]
+    output: [backend_change_plan]
+
+  - from: issue_diagnosis
+    to: frontend_fix
+    when: suspected_owner == "frontend-development-agent" or issue_domain == "frontend"
+    input: [diagnosis_summary, reproduction_steps, diagnostic_evidence, page_targets]
+    output: [frontend_change_plan]
+
+  - from: issue_diagnosis
+    to: uiux_review
+    when: suspected_owner == "ui-ux-review-agent" or issue_domain == "uiux"
+    input: [diagnosis_summary, reproduction_steps, diagnostic_evidence, page_targets]
+    output: [uiux_feedback]
+
+  - from: issue_diagnosis
+    to: evaluate
+    when: suspected_owner == "technology-minister-agent" or issue_domain in ["environment", "blocked", "unreproduced"]
+    input: [diagnosis_summary, reproduction_steps, diagnostic_evidence]
+    output: [evaluation_rework]
+
+  - from: backend_fix
+    to: frontend_fix
+    when: frontend_followup_required == true
+    input: [backend_change_notes, updated_api_contract]
+    output: [frontend_integration_plan]
+
+  - from: backend_fix
+    to: regression
+    when: backend_ready == true and frontend_followup_required != true
+    input: [backend_change_notes, updated_api_contract]
+    output: [regression_scope]
+
+  - from: frontend_fix
+    to: uiux_review
+    when: ui_structure_changed == true
+    input: [page_targets, frontend_change_notes]
+    output: [uiux_feedback]
+
+  - from: frontend_fix
+    to: regression
+    when: ui_structure_changed != true
+    input: [frontend_change_notes]
+    output: [regression_scope]
+
+  - from: uiux_review
+    to: frontend_fix
+    when: uiux_passed == false
+    input: [uiux_feedback]
+    output: [frontend_rework]
+
+  - from: uiux_review
+    to: regression
+    when: uiux_passed == true
+    input: [uiux_feedback, frontend_change_notes]
+    output: [regression_scope]
+
+  - from: regression
+    to: backend_fix
+    when: regression_passed == false and issue_domain in ["backend", "fullstack"]
+    input: [regression_result]
+    output: [backend_rework]
+
+  - from: regression
+    to: frontend_fix
+    when: regression_passed == false and issue_domain == "frontend"
+    input: [regression_result]
+    output: [frontend_rework]
+
+  - from: regression
+    to: host_acceptance
+    when: regression_passed == true
+    input: [regression_result]
+    output: [acceptance_request]
+
+  - from: host_acceptance
+    to: evaluate
+    when: acceptance_passed == false
+    input: [acceptance_result]
+    output: [evaluation_rework]
+
+  - from: host_acceptance
+    to: archive
+    when: acceptance_passed == true
+    input: [evaluation_summary, role_execution_trace, regression_result, acceptance_result, pass_flags]
+    output: [archive_record, development_results, development_acceptance_passed, development_acceptance_source, development_completion_source, development_workflow_completed]
+
+success_criteria:
+  - role_execution_trace includes ["technology-minister-agent", "regression-validation-agent", "host-acceptance-agent"]
+  - input_type != "problem_feedback" or role_execution_trace includes "issue-diagnosis-agent"
+  - problem_report is null or role_execution_trace includes "issue-diagnosis-agent"
+  - code_changed != true or role_execution_trace includes one of ["backend-development-agent", "frontend-development-agent"]
+  - uiux_required != true or uiux_passed == true
+  - regression_passed == true
+  - acceptance_passed == true
+  - development_acceptance_source == "host-acceptance-agent"
+  - development_workflow_completed == true
+  - build_result is not terminal
+  - compile_result is not terminal
+  - qa_required != true or regression_passed == true
+
+failure_policy:
+  - if blocking_issue_found: reroute_to_related_dev_agent
+  - if environment_not_ready: stay_at_evaluate
+  - if input_type == "problem_feedback" and role_execution_trace missing "issue-diagnosis-agent": reroute_to_issue_diagnosis
+  - if problem_report is not null and role_execution_trace missing "issue-diagnosis-agent": reroute_to_issue_diagnosis
+  - if issue_domain in ["unknown", "bug", "needs_diagnosis"] and diagnostic_evidence is null: reroute_to_issue_diagnosis
+  - if next_required_node in ["uiux_review", "regression", "host_acceptance"] and target_agent_loaded != true: stop_and_load_target_agent_before_execution
+  - if current_node == "regression" and acting_agent != "regression-validation-agent": mark_as_workflow_violation_and_reroute_to_regression
+  - if current_node == "uiux_review" and acting_agent != "ui-ux-review-agent": mark_as_workflow_violation_and_reroute_to_uiux_review
+  - if current_node == "host_acceptance" and acting_agent != "host-acceptance-agent": mark_as_workflow_violation_and_reroute_to_host_acceptance
+  - if qa_activity_executed == true and acting_agent != "regression-validation-agent": discard_qa_result_and_reroute_to_regression
+  - if acceptance_activity_executed == true and acting_agent != "host-acceptance-agent": discard_acceptance_result_and_reroute_to_host_acceptance
+  - if role_execution_trace missing required agent for current_node: mark_as_workflow_violation_and_reroute_to_evaluate
+  - if acting_agent is null or current_node is null or workflow_edge is null or next_required_node is null: mark_as_workflow_violation_and_reroute_to_evaluate
+  - if regression_passed == true and node_completion_sources.regression_passed != "regression-validation-agent": clear_regression_passed_and_reroute_to_regression
+  - if uiux_passed == true and node_completion_sources.uiux_passed != "ui-ux-review-agent": clear_uiux_passed_and_reroute_to_uiux_review
+  - if acceptance_passed == true and node_completion_sources.acceptance_passed != "host-acceptance-agent": clear_acceptance_passed_and_reroute_to_host_acceptance
+  - if development_workflow_completed == true and development_acceptance_source != "host-acceptance-agent": clear_completion_and_reroute_to_host_acceptance
+  - if whitelist_command_violated == true: mark_as_workflow_violation_and_reroute
+  - if code_changed == true and qa_required != true: mark_as_workflow_violation_and_reroute_to_regression
+  - if build_or_compile_passed == true and regression_passed != true: do_not_archive_and_continue_to_regression
+  - if build_or_compile_passed == true and acceptance_passed != true: do_not_archive_and_continue_to_host_acceptance
+  - if repeated_failure_rounds >= 3: escalate_to_ceo-orchestrator-agent
+  - if upstream_workflow == "self_optimization_workflow" and acceptance_passed != true: do_not_archive_and_continue_development_loop
+  - if upstream_workflow == "self_optimization_workflow" and regression_passed == true and acceptance_passed == true: return_results_to_self_optimization_review

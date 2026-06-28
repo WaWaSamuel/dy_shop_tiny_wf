@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db, get_read_db
+from app.api.deps import get_current_ecommerce_user_id, get_db, get_read_db
 
 router = APIRouter()
 
@@ -217,6 +217,45 @@ class SupplierSaveRequest(BaseModel):
     tags: List[str] = Field(default_factory=list)
 
 
+class CompareProduct(BaseModel):
+    """Product card payload used by the sourcing comparison mock."""
+
+    id: str
+    name: str
+    price: float
+    min_order: int
+    source: str
+    supplier: str
+    rating: float
+    sold: int
+    tags: List[str] = Field(default_factory=list)
+
+
+class CompareRequest(BaseModel):
+    """Compare and recommend suppliers/products from already listed cards."""
+
+    products: List[CompareProduct] = Field(default_factory=list)
+
+
+class CompareRanking(BaseModel):
+    """Ranked compare item."""
+
+    product_id: str
+    score: float
+    reasons: List[str]
+
+
+class CompareResponse(BaseModel):
+    """Comparison response for the sourcing page."""
+
+    compared_at: str
+    sample_size: int
+    recommended_product_id: Optional[str] = None
+    lowest_price_product_id: Optional[str] = None
+    highest_rating_product_id: Optional[str] = None
+    rankings: List[CompareRanking]
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -225,7 +264,7 @@ class SupplierSaveRequest(BaseModel):
 @router.post("/search")
 async def search_suppliers(
     payload: SupplierSearchRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Search suppliers across multiple providers concurrently."""
     import asyncio
@@ -255,11 +294,77 @@ async def search_suppliers(
     }
 
 
+@router.post("/compare", response_model=CompareResponse)
+async def compare_products(
+    payload: CompareRequest,
+    user_id: str = Depends(get_current_ecommerce_user_id),
+):
+    """Return a backend comparison result for the current sourcing cards."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    del user_id
+    if not payload.products:
+        return CompareResponse(
+            compared_at=datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+            sample_size=0,
+            rankings=[],
+        )
+
+    lowest_price = min(item.price for item in payload.products)
+    highest_rating = max(item.rating for item in payload.products)
+
+    rankings: List[CompareRanking] = []
+    for product in payload.products:
+        score = (
+            100
+            - product.price * 1.8
+            - product.min_order * 0.05
+            + product.rating * 12
+            + min(product.sold / 1000, 30)
+            + len(product.tags) * 2
+        )
+        reasons: List[str] = []
+        if product.price == lowest_price:
+            reasons.append("当前样本最低价")
+        if product.rating == highest_rating or product.rating >= 4.8:
+            reasons.append("评分稳定")
+        if product.sold >= 20000:
+            reasons.append("销量验证充分")
+        if product.min_order <= 50:
+            reasons.append("起订门槛低")
+        if any(("工厂" in tag) or ("源头" in tag) for tag in product.tags):
+            reasons.append("供货链路较短")
+        if not reasons:
+            reasons.append("价格、销量与供货条件均衡")
+
+        rankings.append(
+            CompareRanking(
+                product_id=product.id,
+                score=round(score, 1),
+                reasons=reasons,
+            )
+        )
+
+    rankings.sort(key=lambda item: item.score, reverse=True)
+    recommended_id = rankings[0].product_id if rankings else None
+    lowest_id = min(payload.products, key=lambda item: item.price).id
+    highest_id = max(payload.products, key=lambda item: (item.rating, item.sold)).id
+    return CompareResponse(
+        compared_at=datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+        sample_size=len(payload.products),
+        recommended_product_id=recommended_id,
+        lowest_price_product_id=lowest_id,
+        highest_rating_product_id=highest_id,
+        rankings=rankings,
+    )
+
+
 @router.get("/supplier/{provider}/{supplier_id}")
 async def get_supplier_detail(
     provider: ProviderType,
     supplier_id: str,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get detailed info for a specific supplier from a provider."""
     p = get_provider(provider)
@@ -269,7 +374,7 @@ async def get_supplier_detail(
 @router.post("/quotes")
 async def get_quotes(
     payload: QuoteRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get price quotes from multiple providers."""
     import asyncio
@@ -302,7 +407,7 @@ async def get_quotes(
 async def save_supplier(
     payload: SupplierSaveRequest,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Save a supplier to the user's sourcing list."""
     from sqlalchemy import text
@@ -334,7 +439,7 @@ async def save_supplier(
 async def list_saved_suppliers(
     provider: Optional[ProviderType] = None,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """List user's saved suppliers, optionally filtered by provider."""
     from sqlalchemy import text

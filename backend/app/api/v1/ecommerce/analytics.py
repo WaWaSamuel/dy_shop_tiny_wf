@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_read_db, get_redis
+from app.api.deps import get_current_ecommerce_user_id, get_read_db, get_redis
 
 router = APIRouter()
 
@@ -114,7 +114,7 @@ async def get_dashboard(
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_read_db),
     redis=Depends(get_redis),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get dashboard overview with key metrics and period-over-period comparison.
 
@@ -224,7 +224,7 @@ async def get_timeseries(
     granularity: Granularity = Granularity.DAILY,
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get time series data for a specific metric."""
     from sqlalchemy import text
@@ -300,7 +300,7 @@ async def get_top_products(
     days: int = Query(30, ge=1, le=365),
     limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get top performing products by revenue."""
     from sqlalchemy import text
@@ -337,7 +337,7 @@ async def get_top_products(
 async def get_channel_breakdown(
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get revenue breakdown by sales channel."""
     from sqlalchemy import text
@@ -378,7 +378,7 @@ async def get_channel_breakdown(
 async def export_analytics(
     payload: AnalyticsExportRequest,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Export analytics data in CSV or JSON format.
 

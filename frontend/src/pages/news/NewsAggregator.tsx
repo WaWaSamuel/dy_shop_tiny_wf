@@ -32,6 +32,7 @@ const DATA_STALE_HOURS = 6;
 const sourceStatusMeta: Record<string, { label: string; color: string }> = {
   ok: { label: '正常', color: 'green' },
   configured: { label: '已配置', color: 'blue' },
+  agent_submitted: { label: 'Agent提交', color: 'purple' },
   error: { label: '失败', color: 'red' },
 };
 
@@ -169,6 +170,7 @@ export default function NewsAggregator() {
     : wereadSession.healthy
       ? (isDigestStale ? '数据待刷新' : '抓取链路正常')
       : '微信读书需要重新登录';
+  const isBrowserAgentMode = digest?.mode === 'browser_agent';
 
   const openSourceSite = (source: NewsSource) => {
     window.open(source.homepageUrl || source.feedUrl, '_blank', 'noopener,noreferrer');
@@ -217,7 +219,12 @@ export default function NewsAggregator() {
         content: contentParts.join('｜'),
         items: pushItems,
       });
-      messageApi.success(`已推送到飞书：${result.target_hint}`);
+      await loadDigest(false);
+      if (result.success) {
+        messageApi.success(`已推送到飞书：${result.target_hint}`);
+      } else {
+        messageApi.warning(result.error_detail || `推送未成功：${result.target_hint}`);
+      }
     } catch (pushError) {
       console.error('Failed to push digest to Feishu', pushError);
       const detail = pushError instanceof Error ? pushError.message : '飞书推送失败';
@@ -240,12 +247,13 @@ export default function NewsAggregator() {
                   资讯聚合引擎
                 </Title>
                 <Paragraph style={{ margin: '8px 0 0', maxWidth: 760 }}>
-                  这里不是简单列表，而是每天的资讯工作台。它会按固定时间窗口聚合公众号内容，
-                  先告诉你哪些源正常、哪些热点值得看，再把文章按可读顺序铺开。
+                  这里不是简单列表，而是浏览器型资讯 agent 的结果展示台。agent 会进入微信读书书架，
+                  找最近 24 小时文章并整理一句话摘要，再把结果交给这里展示和推送。
                 </Paragraph>
                 <Space size={[8, 8]} wrap>
                   {digest?.window ? <Tag color="blue">窗口：{digest.window.label}</Tag> : null}
                   {digest?.window?.timezone ? <Tag>{digest.window.timezone}</Tag> : null}
+                  {digest?.generatedBy ? <Tag color="purple">来源：{digest.generatedBy}</Tag> : null}
                   <Tag color={heroStatusTone === 'success' ? 'green' : heroStatusTone === 'warning' ? 'gold' : 'red'}>
                     {heroStatusText}
                   </Tag>
@@ -271,14 +279,14 @@ export default function NewsAggregator() {
                 disabled={!digest || visibleItems.length === 0}
                 onClick={() => void handlePushToFeishu()}
               >
-                推送飞书
+                推送当前结果
               </Button>
               <Button
                 icon={<StickerIcon src={stickers.actions.retry} alt="刷新聚合" size="sm" />}
                 loading={refreshing}
                 onClick={() => loadDigest(true)}
               >
-                立即刷新
+                刷新资讯结果
               </Button>
             </Flex>
           </Col>
@@ -308,6 +316,16 @@ export default function NewsAggregator() {
               ))}
             </Space>
           }
+        />
+      ) : null}
+
+      {isBrowserAgentMode ? (
+        <Alert
+          style={{ marginTop: 16 }}
+          type="success"
+          showIcon
+          message="当前结果来自浏览器型资讯 Agent"
+          description="项目代码不再自己抓微信读书页面；由 TRAE Work 里的资讯 Agent 控制浏览器完成阅读、摘要和结果提交，这里只负责展示与推送。"
         />
       ) : null}
 
@@ -349,6 +367,34 @@ export default function NewsAggregator() {
           </Card>
         </Col>
       </Row>
+
+      <Card className="surface-card" style={{ marginTop: 16 }} title="推送记录">
+        {digest?.pushRecords?.length ? (
+          <List
+            dataSource={digest.pushRecords}
+            renderItem={(record) => (
+              <List.Item>
+                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                  <Space size={[8, 8]} wrap>
+                    <Tag color={record.status === 'sent' ? 'green' : 'red'}>
+                      {record.status === 'sent' ? '已推送' : '推送失败'}
+                    </Tag>
+                    <Text strong>{record.title}</Text>
+                    <Text type="secondary">{formatDateTime(record.pushedAt)}</Text>
+                  </Space>
+                  <Text type="secondary">
+                    目标：{record.targetHint || `${record.receiveIdType}:${record.receiveId || '--'}`} · 条目数：{record.itemCount}
+                  </Text>
+                  {record.content ? <Text type="secondary">说明：{record.content}</Text> : null}
+                  {record.errorDetail ? <Text type="danger">失败原因：{record.errorDetail}</Text> : null}
+                </Space>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有推送记录" />
+        )}
+      </Card>
 
       <Row gutter={[16, 16]} style={{ marginTop: 0 }}>
         <Col xs={24} xl={7}>

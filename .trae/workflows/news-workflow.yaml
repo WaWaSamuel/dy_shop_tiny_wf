@@ -1,0 +1,132 @@
+workflow_id: news_workflow
+name: 资讯摘要工作流
+description: >
+  用于微信读书 / 公众号 / 热点摘要类任务。必须先过权限守门，再执行浏览器型摘要动作；
+  遇到登录异常时必须阻断并回到恢复或人工提醒节点。
+
+department: 情报部
+minister_role: news-digest-agent
+
+entry_rules:
+  - task_domain in ["news", "digest", "weread"]
+  - user_goal contains one of ["摘要", "公众号", "微信读书", "日报", "热点"]
+
+workflow_guardrails:
+  - key: site_preflight_required
+    rule: 进入微信读书、公众号文章或热点摘要采集前，必须先执行 `site-preflight-check`。
+  - key: login_state_blocks_execution
+    rule: 微信读书未登录、Cookie 过期、书架页回退登录页时必须阻断。
+  - key: recovery_must_recheck
+    rule: 登录恢复后必须重新回到 `preflight_guard` 复测，不允许直接跳回 `digest`。
+  - key: no_fake_digest_on_block
+    rule: 守门未通过时不得继续抓取、摘要或提交结果。
+  - key: guard_output_contract
+    rule: 守门输出至少包含 `guard_status`、`block_reason`、`recovery_action`、`next_node`。
+
+human_gates:
+  - key: login_recovery_notice
+    trigger: 微信读书未登录、Cookie 过期或需要宿主完成外部登录。
+    node: human_gate
+    required_output: [confirmation_item, recommended_options, workflow_pause_status]
+  - key: retry_or_send_target_confirmation
+    trigger: 需要宿主明确发送对象、是否继续重试或是否取消本轮摘要。
+    node: human_gate
+    required_output: [continue_or_pause_or_cancel, decision_reason]
+  - key: archive_on_pause_or_cancel
+    rule: 宿主选择暂缓或取消时必须进入归档，不允许只停留在聊天记录里。
+
+workflow_controller: news-digest-agent
+
+state_schema:
+  - task_brief
+  - time_window
+  - source_list
+  - login_state
+  - digest_result
+  - submit_result
+  - final_status
+
+roles:
+  - key: intelligence_minister
+    agent: news-digest-agent
+    responsibility: 情报部部长，负责资讯任务拆解、守门调度、摘要执行要求和收口判断
+  - key: digest_executor
+    skill: weread-wechat-digest
+    responsibility: 微信读书 / 公众号文章采集、摘要、提交展示与后续推送
+  - key: session_guard
+    skill: site-preflight-check
+    responsibility: 外部站点登录态、Bridge、页面状态守门
+  - key: session_recovery
+    skill: site-session-recovery
+    responsibility: 登录态或 Cookie 失效时恢复并触发复测
+
+nodes:
+  - key: plan_digest
+    agent: news-digest-agent
+    role: intelligence_minister
+  - key: preflight_guard
+    skill: site-preflight-check
+    role: guard_skill
+  - key: login_recovery
+    skill: site-session-recovery
+    role: recovery_skill
+  - key: digest
+    skill: weread-wechat-digest
+    role: execution_skill
+  - key: human_gate
+    skill: human-gate-approval
+    role: hitl_skill
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: plan_digest
+    to: preflight_guard
+    when: news_plan is not null
+    input: [task_brief, time_window, source_list]
+    output: [guard_request]
+
+  - from: preflight_guard
+    to: login_recovery
+    when: guard_status == "blocked"
+    input: [login_state, browser_state]
+    output: [recovery_request]
+
+  - from: login_recovery
+    to: preflight_guard
+    when: recovery_ready == true
+    input: [recovery_notes]
+    output: [guard_recheck]
+
+  - from: preflight_guard
+    to: digest
+    when: guard_status == "passed"
+    input: [time_window, source_list]
+    output: [digest_task]
+
+  - from: digest
+    to: preflight_guard
+    when: login_expired_during_run == true
+    input: [digest_runtime_error]
+    output: [guard_recheck]
+
+  - from: digest
+    to: human_gate
+    when: reminder_or_confirmation_needed == true
+    input: [digest_result, runtime_notice]
+    output: [decision_prompt]
+
+  - from: digest
+    to: archive
+    when: digest_completed == true
+    input: [digest_result, submit_result]
+    output: [archive_record]
+
+success_criteria:
+  - digest_completed == true
+  - submit_result == "ok"
+
+failure_policy:
+  - if login_expired_during_run: reroute_to_preflight_guard
+  - if user_rejects_recovery: archive_as_blocked

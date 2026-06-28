@@ -1,5 +1,5 @@
 import api from './api';
-import type { NewsDigest, NewsDigestItem, NewsSource, NewsTopic } from '@/types';
+import type { NewsDigest, NewsDigestItem, NewsDigestPushRecord, NewsSource, NewsTopic } from '@/types';
 
 interface NewsDigestApiResponse {
   window: {
@@ -38,6 +38,21 @@ interface NewsDigestApiResponse {
     excerpt: string;
   }>;
   notes: string[];
+  mode: string;
+  generated_by?: string | null;
+  push_records: Array<{
+    id: string;
+    pushed_at: string;
+    title: string;
+    content: string;
+    item_count: number;
+    status: 'sent' | 'failed';
+    target_hint: string;
+    receive_id_type: string;
+    receive_id: string;
+    message_id?: string | null;
+    error_detail?: string | null;
+  }>;
 }
 
 const mapTopic = (topic: NewsDigestApiResponse['topics'][number]): NewsTopic => ({
@@ -69,6 +84,20 @@ const mapItem = (item: NewsDigestApiResponse['items'][number]): NewsDigestItem =
   excerpt: item.excerpt,
 });
 
+const mapPushRecord = (record: NewsDigestApiResponse['push_records'][number]): NewsDigestPushRecord => ({
+  id: record.id,
+  pushedAt: record.pushed_at,
+  title: record.title,
+  content: record.content,
+  itemCount: record.item_count,
+  status: record.status,
+  targetHint: record.target_hint,
+  receiveIdType: record.receive_id_type,
+  receiveId: record.receive_id,
+  messageId: record.message_id,
+  errorDetail: record.error_detail,
+});
+
 const mapDigest = (payload: NewsDigestApiResponse): NewsDigest => ({
   window: payload.window,
   refreshedAt: payload.refreshed_at,
@@ -78,6 +107,9 @@ const mapDigest = (payload: NewsDigestApiResponse): NewsDigest => ({
   sources: payload.sources.map(mapSource),
   items: payload.items.map(mapItem),
   notes: payload.notes,
+  mode: payload.mode,
+  generatedBy: payload.generated_by,
+  pushRecords: payload.push_records.map(mapPushRecord),
 });
 
 export const getNewsDigest = async (refresh = false): Promise<NewsDigest> => {
@@ -113,13 +145,58 @@ interface NewsDigestPushRequest {
 
 interface NewsDigestPushResponse {
   success: boolean;
+  status: 'sent' | 'failed';
   receive_id_type: string;
   receive_id: string;
   target_hint: string;
   message_id?: string | null;
+  record_id?: string | null;
+  pushed_at?: string | null;
+  error_detail?: string | null;
 }
 
 export const pushNewsDigest = async (payload: NewsDigestPushRequest): Promise<NewsDigestPushResponse> => {
   const response = await api.post('/v1/news/digest/push', payload) as NewsDigestPushResponse;
   return response;
+};
+
+interface BrowserNewsDigestSubmitRequest {
+  window?: {
+    start?: string;
+    end?: string;
+  };
+  topics?: Array<{
+    topic: string;
+    count?: number;
+    sources?: string[];
+  }>;
+  sources?: Array<{
+    id?: string;
+    name: string;
+    homepage_url?: string;
+    feed_url?: string;
+    article_count?: number;
+    status?: string;
+    last_error?: string;
+    fetched_at?: string;
+  }>;
+  items: Array<{
+    id?: string;
+    title: string;
+    source_id?: string;
+    source_name: string;
+    url: string;
+    published_at?: string;
+    summary: string;
+    highlights?: string[];
+    excerpt?: string;
+  }>;
+  notes?: string[];
+  mode?: string;
+  generated_by?: string;
+}
+
+export const submitBrowserNewsDigest = async (payload: BrowserNewsDigestSubmitRequest): Promise<NewsDigest> => {
+  const response = await api.post('/v1/news/digest/submit', payload) as NewsDigestApiResponse;
+  return mapDigest(response);
 };

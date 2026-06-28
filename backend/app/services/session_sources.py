@@ -247,11 +247,18 @@ class SessionSourceService:
                 response = await client.get("/web/shelf")
                 response.raise_for_status()
                 html = response.text
-                login_markers = ("扫码登录", "login_container", "登录后", "login-wrapper")
+                login_markers = (
+                    "扫码登录",
+                    "login_container",
+                    "登录后",
+                    "login-wrapper",
+                    "navBar_link_Login",
+                    ">登录</button>",
+                )
                 if any(marker in html for marker in login_markers):
-                    raise RuntimeError("微信读书返回了登录页，当前 cookie 已失效。")
-                if "MP_WXS_" not in html and not display_name:
-                    raise RuntimeError("微信读书书架页未识别到公众号内容，当前登录态校验未通过。")
+                    raise RuntimeError("微信读书书架页仍然出现登录入口，当前浏览器会话未真正登录。")
+                if "MP_WXS_" not in html:
+                    raise RuntimeError("微信读书书架页未识别到公众号来源，当前会话还不能用于公众号抓取。")
                 return {
                     "message": f"登录态正常，当前账号：{display_name or user_vid}",
                     "user_vid": user_vid,

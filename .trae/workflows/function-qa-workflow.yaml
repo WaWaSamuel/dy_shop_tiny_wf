@@ -1,0 +1,57 @@
+workflow_id: function_qa_workflow
+name: 技术开发部门功能 QA 工作流
+description: >
+  用于接口、流程、回归和功能正确性验证。它是 `development_workflow`
+  内部的功能 QA SOP。
+
+department: 技术开发部门 / 功能 QA
+parent_workflow: development_workflow
+minister_role: regression-validation-agent
+
+entry_rules:
+  - parent_workflow == "development_workflow"
+  - task_domain in ["regression", "functional_qa", "api_validation", "flow_validation"]
+
+workflow_controller: regression-validation-agent
+
+state_schema:
+  - change_scope
+  - api_status
+  - page_status
+  - regression_result
+  - retest_signal
+
+roles:
+  - key: function_qa_minister
+    agent: regression-validation-agent
+    responsibility: 回归验证、功能正确性、接口与流程验收
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    responsibility: 宿主视角验收与是否收口判断
+
+nodes:
+  - key: regression
+    agent: regression-validation-agent
+    role: function_qa_minister
+  - key: host_acceptance
+    agent: host-acceptance-agent
+    role: host_acceptance
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: regression
+    to: host_acceptance
+    when: regression_passed == true
+    input: [regression_result]
+    output: [host_acceptance_request]
+  - from: host_acceptance
+    to: archive
+    when: acceptance_passed == true
+    input: [regression_result, host_acceptance_result]
+    output: [archive_record]
+
+success_criteria:
+  - regression_passed == true
+  - acceptance_passed == true

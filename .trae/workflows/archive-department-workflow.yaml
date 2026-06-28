@@ -1,0 +1,48 @@
+workflow_id: archive_department_workflow
+name: 经营档案复盘部工作流
+description: >
+  用于沉淀工作流输入、关键决策、人工确认、产物、终态和复盘线索。
+  它不是一线执行流，而是一人公司的公司记忆与复盘 SOP。
+
+department: 经营档案 / 复盘部
+minister_role: process-archive-agent
+
+entry_rules:
+  - workflow_terminal_state in ["completed", "paused", "cancelled", "blocked", "optimized", "accepted"]
+
+workflow_controller: process-archive-agent
+
+state_schema:
+  - workflow_id
+  - run_id
+  - decisions
+  - human_confirmations
+  - artifacts
+  - final_status
+  - replay_notes
+
+roles:
+  - key: archive_minister
+    agent: process-archive-agent
+    responsibility: 定义归档口径、复盘线索和公司记忆结构
+  - key: archive_executor
+    skill: workflow-archive-report
+    responsibility: 生成归档记录或可视化收口结果
+
+nodes:
+  - key: prepare_archive
+    agent: process-archive-agent
+    role: archive_minister
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_executor
+
+edges:
+  - from: prepare_archive
+    to: archive
+    when: final_status is not null
+    input: [workflow_id, run_id, decisions, human_confirmations, artifacts, final_status]
+    output: [archive_task]
+
+success_criteria:
+  - archive_record is not null

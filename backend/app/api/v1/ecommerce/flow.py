@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db, get_read_db
+from app.api.deps import get_current_ecommerce_user_id, get_db, get_read_db
 
 router = APIRouter()
 
@@ -157,7 +157,7 @@ async def list_flows(
     product_id: Optional[UUID] = None,
     is_active: Optional[bool] = None,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """List all flows for the current user."""
     from sqlalchemy import text
@@ -185,7 +185,7 @@ async def list_flows(
 async def create_flow(
     payload: FlowCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Create a new product flow."""
     from sqlalchemy import text
@@ -219,7 +219,7 @@ async def update_flow(
     flow_id: UUID,
     payload: FlowUpdate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Update flow metadata."""
     from sqlalchemy import text
@@ -251,7 +251,7 @@ async def update_flow(
 async def delete_flow(
     flow_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Delete a flow and its nodes/edges."""
     from sqlalchemy import text
@@ -273,7 +273,7 @@ async def delete_flow(
 async def list_nodes(
     flow_id: UUID,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """List all nodes in a flow."""
     from sqlalchemy import text
@@ -297,7 +297,7 @@ async def list_nodes(
 async def create_node(
     payload: NodeCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Add a node to a flow."""
     from sqlalchemy import text
@@ -339,7 +339,7 @@ async def update_node(
     node_id: UUID,
     payload: NodeUpdate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Update a node."""
     from sqlalchemy import text
@@ -368,7 +368,7 @@ async def update_node(
 async def delete_node(
     node_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Delete a node from a flow."""
     from sqlalchemy import text
@@ -393,7 +393,7 @@ async def delete_node(
 async def create_edge(
     payload: EdgeCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Create a directed edge between two nodes."""
     from sqlalchemy import text
@@ -431,7 +431,7 @@ async def create_edge(
 async def delete_edge(
     edge_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Delete an edge."""
     from sqlalchemy import text
@@ -456,7 +456,7 @@ async def delete_edge(
 async def execute_flow(
     flow_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Trigger execution of a flow. Processing is handled asynchronously."""
     from sqlalchemy import text

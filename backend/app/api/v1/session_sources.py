@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import get_redis
 from app.services.session_sources import SessionSourceService
+from app.tools.runtime_tools import ToolContext, registry
 
 router = APIRouter()
 
@@ -57,8 +58,11 @@ async def list_session_sources(
     refresh: bool = Query(False, description="Run a live probe before returning"),
     redis: Any = Depends(get_redis),
 ) -> list[dict[str, Any]]:
-    service = SessionSourceService()
-    return await service.list_sources(redis=redis, refresh=refresh)
+    return await registry.invoke(
+        "session_sources.list",
+        context=ToolContext(redis=redis),
+        args={"refresh": refresh},
+    )
 
 
 @router.post("/{source_id}/probe", response_model=SessionSourceResponse)
@@ -67,11 +71,13 @@ async def probe_session_source(
     payload: SessionSourceActionRequest,
     redis: Any = Depends(get_redis),
 ) -> dict[str, Any]:
-    service = SessionSourceService()
-    return await service.probe_source(
-        redis=redis,
-        source_id=source_id,
-        refresh_cookie_from_browser=payload.refresh_cookie_from_browser,
+    return await registry.invoke(
+        "session_sources.probe",
+        context=ToolContext(redis=redis),
+        args={
+            "source_id": source_id,
+            "refresh_cookie_from_browser": payload.refresh_cookie_from_browser,
+        },
     )
 
 

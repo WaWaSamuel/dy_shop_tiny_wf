@@ -1,0 +1,205 @@
+workflow_id: ecommerce_workflow
+name: 电商工作流
+description: >
+  用于货盘导入、候选筛选、1688 比价、素材规划、上架准备和异常订单处理。
+  该工作流以 `ecommerce-orchestrator-agent` 为 controller，按阶段推进，局部插入人工确认与守门节点。
+
+department: 电商部门
+minister_role: ecommerce-orchestrator-agent
+child_department_workflows:
+  - product_department_workflow
+  - supply_chain_department_workflow
+  - content_material_department_workflow
+  - customer_risk_department_workflow
+
+entry_rules:
+  - task_domain in ["ecommerce", "catalog", "product", "listing", "order_exception"]
+  - user_goal contains one of ["货盘", "选品", "比价", "素材", "上架", "异常订单"]
+
+workflow_guardrails:
+  - key: site_preflight_required
+    rule: 涉及外部页面、账号状态、Bridge、1688、抖掌柜或跨站点依赖时，必须先执行 `site-preflight-check`。
+  - key: guard_blocks_business_steps
+    rule: 守门未通过不得进入货盘质检、候选筛选、供应商比价、素材规划、上架准备或异常订单处理。
+  - key: recover_before_continue
+    rule: 登录态、Cookie、Bridge 或外部依赖可恢复时，先走恢复动作并重新守门。
+  - key: guard_output_contract
+    rule: 守门输出至少包含 `guard_status`、`block_reason`、`recovery_action`、`next_node`。
+
+human_gates:
+  - key: candidate_confirmation
+    trigger: 候选商品需要宿主确认后才能进入供应商比价。
+    node: human_gate
+    allowed_decisions: [continue_to_supplier, pause, cancel, change_plan]
+  - key: supplier_confirmation
+    trigger: 供应商、价格、物流或风险结论需要宿主确认后才能进入素材规划。
+    node: human_gate
+    allowed_decisions: [continue_to_creative, pause, cancel, change_plan]
+  - key: listing_confirmation
+    trigger: 上架前最终确认，涉及真实上架、对外发布或不可逆动作。
+    node: human_gate
+    allowed_decisions: [approved_listing, pause, cancel, change_plan]
+  - key: exception_order_confirmation
+    trigger: 异常订单处理涉及退款、发货、补偿、取消或对外沟通。
+    node: human_gate
+    allowed_decisions: [continue, pause, cancel, change_plan]
+  - key: archive_on_pause_or_cancel
+    rule: 任何暂停、取消、已完成状态都必须进入 `archive`，人工确认结论不得只留在聊天里。
+
+workflow_controller: ecommerce-orchestrator-agent
+
+state_schema:
+  - task_brief
+  - catalog_object
+  - candidate_list
+  - supplier_result
+  - creative_result
+  - listing_result
+  - exception_result
+  - final_status
+
+roles:
+  - key: ecommerce_minister
+    agent: ecommerce-orchestrator-agent
+    responsibility: 电商主链阶段推进、二级部门 SOP 调度、人工确认插入
+  - key: product_department
+    workflow: product_department_workflow
+    responsibility: 货盘质检、选品候选发现、上架准备
+  - key: supply_chain_department
+    workflow: supply_chain_department_workflow
+    responsibility: 1688 货源、供应商比价、物流风险
+  - key: content_material_department
+    workflow: content_material_department_workflow
+    responsibility: 标题、素材、详情页结构
+  - key: customer_risk_department
+    workflow: customer_risk_department_workflow
+    responsibility: 异常订单、人工确认、风险处理
+
+nodes:
+  - key: preflight_guard
+    skill: site-preflight-check
+    role: guard_skill
+  - key: catalog_quality
+    skill: catalog-import-check
+    role: validation_skill
+  - key: candidate_discovery
+    agent: candidate-discovery-agent
+    role: worker
+  - key: human_gate
+    skill: human-gate-approval
+    role: hitl_skill
+  - key: supplier_lookup
+    agent: supplier-lookup-agent
+    role: worker
+  - key: creative_strategy
+    agent: creative-strategy-agent
+    role: worker
+  - key: listing_readiness
+    skill: listing-readiness-check
+    role: validation_skill
+  - key: exception_order
+    agent: exception-order-agent
+    role: worker
+  - key: archive
+    skill: workflow-archive-report
+    role: archive_skill
+
+edges:
+  - from: preflight_guard
+    to: catalog_quality
+    when: guard_status == "passed" and exception_mode != true
+    input: [catalog_object]
+    output: [quality_task]
+
+  - from: preflight_guard
+    to: exception_order
+    when: guard_status == "passed" and exception_mode == true
+    input: [catalog_object]
+    output: [exception_task]
+
+  - from: catalog_quality
+    to: candidate_discovery
+    when: quality_passed == true
+    input: [catalog_quality_result]
+    output: [candidate_task]
+
+  - from: candidate_discovery
+    to: human_gate
+    when: candidate_confirmation_required == true
+    input: [candidate_list]
+    output: [decision_prompt]
+
+  - from: human_gate
+    to: supplier_lookup
+    when: decision == "continue_to_supplier"
+    input: [candidate_list, decision]
+    output: [supplier_task]
+
+  - from: candidate_discovery
+    to: supplier_lookup
+    when: candidate_confirmation_required != true
+    input: [candidate_list]
+    output: [supplier_task]
+
+  - from: supplier_lookup
+    to: human_gate
+    when: supplier_confirmation_required == true
+    input: [supplier_result]
+    output: [decision_prompt]
+
+  - from: supplier_lookup
+    to: creative_strategy
+    when: supplier_confirmation_required != true
+    input: [supplier_result]
+    output: [creative_task]
+
+  - from: human_gate
+    to: creative_strategy
+    when: decision == "continue_to_creative"
+    input: [supplier_result, decision]
+    output: [creative_task]
+
+  - from: creative_strategy
+    to: listing_readiness
+    when: creative_ready == true
+    input: [creative_result]
+    output: [listing_task]
+
+  - from: listing_readiness
+    to: human_gate
+    when: listing_confirmation_required == true
+    input: [listing_result]
+    output: [decision_prompt]
+
+  - from: listing_readiness
+    to: archive
+    when: listing_confirmation_required != true
+    input: [listing_result, creative_result, supplier_result]
+    output: [archive_record]
+
+  - from: human_gate
+    to: archive
+    when: decision in ["pause", "cancel", "approved_listing"]
+    input: [decision, listing_result, supplier_result, creative_result]
+    output: [archive_record]
+
+  - from: exception_order
+    to: human_gate
+    when: exception_confirmation_required == true
+    input: [exception_result]
+    output: [decision_prompt]
+
+  - from: exception_order
+    to: archive
+    when: exception_confirmation_required != true
+    input: [exception_result]
+    output: [archive_record]
+
+success_criteria:
+  - listing_result.status in ["ready", "approved", "paused"]
+  - final_status is not null
+
+failure_policy:
+  - if guard_status == "blocked": stay_at_preflight_guard_or_route_to_site-session-recovery
+  - if quality_passed == false: archive_as_input_issue
+  - if decision == "cancel": archive_as_cancelled

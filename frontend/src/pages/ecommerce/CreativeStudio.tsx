@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   Row,
@@ -15,9 +15,12 @@ import {
   Timeline,
   Tooltip,
   Alert,
+  Descriptions,
+  message,
 } from 'antd';
 import StickerIcon from '@/components/common/StickerIcon';
 import { stickers } from '@/assets/stickerPack';
+import { mockGenerateCreative } from '@/services/creativeApi';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -30,13 +33,15 @@ interface VersionCard {
   timestamp: string;
   starred: boolean;
   status: 'generating' | 'completed' | 'failed';
+  category: string;
+  pipeline: string;
 }
 
 const mockVersions: VersionCard[] = [
-  { id: 'v1', thumbnail: 'https://via.placeholder.com/200x200/667eea/fff?text=V1', prompt: '简约风格产品主图，白色背景', engine: 'DALL-E 3', timestamp: '2024-06-01 10:30', starred: true, status: 'completed' },
-  { id: 'v2', thumbnail: 'https://via.placeholder.com/200x200/764ba2/fff?text=V2', prompt: '生活场景使用图，温馨家居风', engine: 'Midjourney v6', timestamp: '2024-06-01 11:15', starred: false, status: 'completed' },
-  { id: 'v3', thumbnail: 'https://via.placeholder.com/200x200/f093fb/fff?text=V3', prompt: '户外运动场景，活力青年', engine: 'Stable Diffusion XL', timestamp: '2024-06-01 14:00', starred: false, status: 'completed' },
-  { id: 'v4', thumbnail: 'https://via.placeholder.com/200x200/4facfe/fff?text=V4', prompt: '节日促销海报，红色喜庆', engine: 'DALL-E 3', timestamp: '2024-06-01 15:30', starred: true, status: 'completed' },
+  { id: 'v1', thumbnail: 'https://via.placeholder.com/200x200/667eea/fff?text=V1', prompt: '简约风格产品主图，白色背景', engine: 'DALL-E 3', timestamp: '2024-06-01 10:30', starred: true, status: 'completed', category: 'main_image', pipeline: 'text2img' },
+  { id: 'v2', thumbnail: 'https://via.placeholder.com/200x200/764ba2/fff?text=V2', prompt: '生活场景使用图，温馨家居风', engine: 'Midjourney v6', timestamp: '2024-06-01 11:15', starred: false, status: 'completed', category: 'detail_page', pipeline: 'img2img' },
+  { id: 'v3', thumbnail: 'https://via.placeholder.com/200x200/f093fb/fff?text=V3', prompt: '户外运动场景，活力青年', engine: 'Stable Diffusion XL', timestamp: '2024-06-01 14:00', starred: false, status: 'completed', category: 'social_post', pipeline: 'text2img' },
+  { id: 'v4', thumbnail: 'https://via.placeholder.com/200x200/4facfe/fff?text=V4', prompt: '节日促销海报，红色喜庆', engine: 'DALL-E 3', timestamp: '2024-06-01 15:30', starred: true, status: 'completed', category: 'ad_banner', pipeline: 'text2img' },
 ];
 
 const categoryOptions = [
@@ -67,6 +72,12 @@ const systemWords = [
   '产品特写', '生活场景', '模特展示', '俯拍', '侧拍',
 ];
 
+const statusTagColor: Record<VersionCard['status'], string> = {
+  generating: 'processing',
+  completed: 'success',
+  failed: 'error',
+};
+
 export default function CreativeStudio() {
   const [selectedCategory, setSelectedCategory] = useState<string>('main_image');
   const [selectedPipeline, setSelectedPipeline] = useState<string>('text2img');
@@ -75,10 +86,83 @@ export default function CreativeStudio() {
   const [selectedWords, setSelectedWords] = useState<string[]>(['高清', '白色背景']);
   const [versions, setVersions] = useState<VersionCard[]>(mockVersions);
   const [selectedVersion, setSelectedVersion] = useState<string>('v1');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const handleGenerate = () => {
+  const categoryLabelMap = useMemo(
+    () => Object.fromEntries(categoryOptions.map((item) => [item.value, item.label])),
+    []
+  );
+  const pipelineLabelMap = useMemo(
+    () => Object.fromEntries(pipelineOptions.map((item) => [item.value, item.label])),
+    []
+  );
+  const engineLabelMap = useMemo(
+    () => Object.fromEntries(engineOptions.map((item) => [item.value, item.label])),
+    []
+  );
+  const selectedVersionDetail = useMemo(
+    () => versions.find((item) => item.id === selectedVersion) || null,
+    [selectedVersion, versions]
+  );
+  const resultSummary = useMemo(() => {
+    const completed = versions.filter((item) => item.status === 'completed').length;
+    const starred = versions.filter((item) => item.starred).length;
+    const latest = versions[0];
+    return {
+      total: versions.length,
+      completed,
+      starred,
+      latestLabel: latest ? `${latest.engine} · ${latest.timestamp}` : '暂无结果',
+    };
+  }, [versions]);
+
+  const handleRefreshCreativeResults = async () => {
     const fullPrompt = [...selectedWords, prompt].filter(Boolean).join('，');
-    console.log('Generating with:', { selectedCategory, selectedPipeline, selectedEngine, fullPrompt });
+    if (!fullPrompt) {
+      messageApi.warning('请先补充筛选描述或选择关键词');
+      return;
+    }
+
+    setIsGenerating(true);
+    const engineLabel = engineLabelMap[selectedEngine] || selectedEngine;
+    try {
+      const response = await mockGenerateCreative({
+        category: selectedCategory,
+        pipeline: selectedPipeline,
+        engine: engineLabel,
+        prompt,
+        systemWords: selectedWords,
+      });
+
+      const drafts: VersionCard[] = response.versions.map((item) => ({
+        id: item.id,
+        thumbnail: item.thumbnail,
+        prompt: item.prompt,
+        engine: item.engine,
+        timestamp: new Date(item.timestamp).toLocaleString('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }),
+        starred: item.starred,
+        status: item.status,
+        category: item.category,
+        pipeline: item.pipeline,
+      }));
+
+      setVersions((prev) => [...drafts, ...prev]);
+      setSelectedVersion(drafts[0]?.id || selectedVersion);
+      messageApi.success(`已同步最新素材结果：${response.summary}`);
+    } catch (error) {
+      console.error(error);
+      messageApi.error('素材结果同步失败');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const toggleStar = (id: string) => {
@@ -89,19 +173,29 @@ export default function CreativeStudio() {
 
   return (
     <div>
+      {contextHolder}
       <Card className="surface-card" style={{ marginBottom: 24 }}>
         <Alert
           type="info"
           showIcon={false}
-          message="建议先在抖掌柜完成上架，再把货品 Excel 导入工作台；素材工坊负责为这些已确认货品补图、详情页和广告素材。"
+          message="素材工坊现在按结果展示台来使用：这里主要查看已回流的素材结果、挑选可用版本、补充复看备注，而不是在页面里直接承担生成执行。"
         />
       </Card>
 
       <Row gutter={24}>
-        {/* Left config panel */}
         <Col xs={24} lg={7}>
-          <Card title="生成配置" size="small">
+          <Card title="结果筛选与同步" size="small">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Card size="small" bordered={false} style={{ background: 'rgba(255,240,246,0.72)', borderRadius: 18 }}>
+                <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                  <Text strong>当前素材结果摘要</Text>
+                  <Text type="secondary">已回流结果 {resultSummary.total} 份，已完成 {resultSummary.completed} 份，收藏 {resultSummary.starred} 份。</Text>
+                  <Tag color="magenta" style={{ width: 'fit-content', borderRadius: 999 }}>
+                    最近结果：{resultSummary.latestLabel}
+                  </Tag>
+                </Space>
+              </Card>
+
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
                   素材类别
@@ -116,7 +210,7 @@ export default function CreativeStudio() {
 
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-                  生成管线
+                  结果来源管线
                 </Text>
                 <Select
                   style={{ width: '100%' }}
@@ -128,7 +222,7 @@ export default function CreativeStudio() {
 
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-                  AI 引擎
+                  结果引擎
                 </Text>
                 <Select
                   style={{ width: '100%' }}
@@ -160,11 +254,11 @@ export default function CreativeStudio() {
 
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-                  创意描述
+                  复看备注 / 筛选描述
                 </Text>
                 <TextArea
                   rows={4}
-                  placeholder="描述你想要生成的素材内容..."
+                  placeholder="写下你想优先复看的素材方向，例如：更柔和、更像主图、更适合详情页..."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
@@ -172,25 +266,25 @@ export default function CreativeStudio() {
 
               <Button
                 type="primary"
-                icon={<StickerIcon src={stickers.actions.generate} alt="生成素材" size="sm" />}
+                icon={<StickerIcon src={stickers.actions.retry} alt="同步素材结果" size="sm" />}
                 block
                 size="large"
-                onClick={handleGenerate}
+                loading={isGenerating}
+                onClick={handleRefreshCreativeResults}
               >
-                生成素材
+                同步最新素材结果
               </Button>
             </Space>
           </Card>
         </Col>
 
-        {/* Center preview area */}
         <Col xs={24} lg={17}>
           <Card
-            title="版本预览"
+            title="素材结果预览"
             extra={
               <Space>
-                <Tag icon={<StickerIcon src={stickers.actions.image} alt="版本预览" size="xs" />} color="blue">
-                  {versions.length} 个版本
+                <Tag icon={<StickerIcon src={stickers.actions.image} alt="素材结果预览" size="xs" />} color="blue">
+                  {versions.length} 份结果
                 </Tag>
               </Space>
             }
@@ -213,6 +307,12 @@ export default function CreativeStudio() {
                           preview={false}
                           style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }}
                         />
+                        <Tag
+                          color={statusTagColor[ver.status]}
+                          style={{ position: 'absolute', top: 8, left: 8, margin: 0 }}
+                        >
+                          {ver.status === 'generating' ? '生成中' : ver.status === 'completed' ? '已完成' : '失败'}
+                        </Tag>
                         <Tooltip title={ver.starred ? '取消收藏' : '收藏'}>
                           <Button
                             type="text"
@@ -240,11 +340,35 @@ export default function CreativeStudio() {
                 </Col>
               ))}
             </Row>
+
+            {selectedVersionDetail && (
+              <Card size="small" style={{ marginTop: 16, background: 'rgba(255,255,255,0.58)' }}>
+                <Descriptions size="small" column={2} bordered>
+                  <Descriptions.Item label="当前结果">{selectedVersionDetail.id}</Descriptions.Item>
+                  <Descriptions.Item label="状态">
+                    <Tag color={statusTagColor[selectedVersionDetail.status]}>
+                      {selectedVersionDetail.status === 'generating' ? '生成中' : selectedVersionDetail.status === 'completed' ? '已完成' : '失败'}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="素材类别">
+                    {categoryLabelMap[selectedVersionDetail.category] || selectedVersionDetail.category}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="生成管线">
+                    {pipelineLabelMap[selectedVersionDetail.pipeline] || selectedVersionDetail.pipeline}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="引擎">{selectedVersionDetail.engine}</Descriptions.Item>
+                  <Descriptions.Item label="时间">{selectedVersionDetail.timestamp}</Descriptions.Item>
+                  <Descriptions.Item label="提示词" span={2}>
+                    {selectedVersionDetail.prompt}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            )}
           </Card>
 
           {/* Bottom version timeline */}
           <Card
-            title="生成历史"
+            title="结果时间线"
             size="small"
             style={{ marginTop: 16 }}
             extra={<StickerIcon src={stickers.actions.history} alt="生成历史" size="sm" />}

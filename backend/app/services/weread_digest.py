@@ -36,6 +36,7 @@ READING_NOISE_PATTERN = re.compile(
     r".*?在小说阅读器读本章 去阅读 在小说阅读器中沉浸阅读",
     re.S,
 )
+WEREAD_LOGIN_REMINDER_TTL_SECONDS = 30 * 60
 
 
 @dataclass
@@ -105,6 +106,8 @@ class WeReadDigestService:
     ) -> dict[str, Any]:
         """Build the digest and optionally push it to Feishu."""
         window_start, window_end = self.resolve_window(start=start, end=end)
+        if redis is not None:
+            await self._ensure_session_ready(redis=redis)
         cookie_header = await self._resolve_cookie_header(redis=redis)
         digest = await self._collect_digest(
             window_start=window_start,
@@ -125,6 +128,19 @@ class WeReadDigestService:
             digest["push_result"] = None
 
         return digest
+
+    async def _ensure_session_ready(self, *, redis: Any) -> None:
+        session_service = SessionSourceService(settings=self.settings)
+        session_payload = await session_service.probe_source(
+            redis=redis,
+            source_id="weread",
+            refresh_cookie_from_browser=False,
+        )
+        if session_payload.get("healthy"):
+            return
+
+        await self._notify_login_required(redis=redis, session_payload=session_payload)
+        raise RuntimeError(session_payload.get("message") or "微信读书登录态不可用，请先登录后再重试。")
 
     def resolve_window(
         self,
@@ -249,7 +265,9 @@ class WeReadDigestService:
         response.raise_for_status()
         book_ids = sorted(set(BOOK_ID_PATTERN.findall(response.text)))
         if not book_ids:
-            raise RuntimeError("No WeRead public-account sources found on shelf. Check Chrome login status first.")
+            raise RuntimeError(
+                "当前微信读书书架里未识别到公众号来源；如果已经登录，请先把目标公众号加入书架后再重试。"
+            )
 
         sources: list[WeReadSource] = []
         for book_id in book_ids:
@@ -505,6 +523,38 @@ class WeReadDigestService:
             open_id=open_id,
             chat_id=chat_id,
         )
+
+    async def _notify_login_required(
+        self,
+        *,
+        redis: Any,
+        session_payload: dict[str, Any],
+    ) -> None:
+        reminder_key = "weread:digest:login-reminder"
+        if await redis.get(reminder_key):
+            return
+
+        bot = get_feishu_bot_service()
+        if not bot.ready:
+            return
+
+        message = str(session_payload.get("message") or "微信读书登录态失效，需要重新登录。")
+        last_error = str(session_payload.get("last_error") or "未提供更多错误信息。")
+        try:
+            await bot.push_info_card(
+                title="微信读书需要重新登录",
+                lines=[
+                    "资讯摘要链路已被宿主/权限状态守门拦下。",
+                    message,
+                    f"错误信息：{last_error}",
+                    "请打开 `https://weread.qq.com/web/shelf` 完成登录，登录完成后再重新触发资讯摘要任务。",
+                ],
+                template="orange",
+            )
+        except Exception as exc:
+            logger.warning("Failed to send WeRead login reminder: %s", exc)
+            return
+        await redis.setex(reminder_key, WEREAD_LOGIN_REMINDER_TTL_SECONDS, "1")
 
     def _write_markdown(self, digest: dict[str, Any]) -> Path:
         start_label = digest["window"]["start_label"]

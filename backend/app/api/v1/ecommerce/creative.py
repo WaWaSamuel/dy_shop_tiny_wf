@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db, get_read_db, get_redis
+from app.api.deps import get_current_ecommerce_user_id, get_db, get_read_db, get_redis
 
 router = APIRouter()
 
@@ -118,6 +118,38 @@ class PipelineResponse(BaseModel):
         from_attributes = True
 
 
+class MockGenerateRequest(BaseModel):
+    """Local mock generation request used before real providers are connected."""
+
+    category: str = Field(..., min_length=1, max_length=100)
+    pipeline: str = Field(..., min_length=1, max_length=100)
+    engine: str = Field(..., min_length=1, max_length=100)
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    system_words: List[str] = Field(default_factory=list)
+
+
+class MockVersionResponse(BaseModel):
+    """Single mock version card."""
+
+    id: str
+    thumbnail: str
+    prompt: str
+    engine: str
+    timestamp: str
+    starred: bool
+    status: str
+    category: str
+    pipeline: str
+
+
+class MockGenerateResponse(BaseModel):
+    """Mock creative generation batch."""
+
+    generated_at: str
+    summary: str
+    versions: List[MockVersionResponse]
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -128,7 +160,7 @@ async def generate_asset(
     payload: GenerateRequest,
     db: AsyncSession = Depends(get_db),
     redis=Depends(get_redis),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Submit a creative asset generation request.
 
@@ -172,6 +204,43 @@ async def generate_asset(
     return AssetResponse(**dict(row))
 
 
+@router.post("/mock-generate", response_model=MockGenerateResponse)
+async def mock_generate_asset(
+    payload: MockGenerateRequest,
+    user_id: str = Depends(get_current_ecommerce_user_id),
+):
+    """Return local mock versions for the creative studio page."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    del user_id
+    now = datetime.now(ZoneInfo("Asia/Shanghai"))
+    batch_id = now.strftime("%Y%m%d%H%M%S")
+    palette = ["667eea", "764ba2", "f093fb"]
+    prompt_prefix = "，".join([*payload.system_words, payload.prompt].copy()).strip("，")
+
+    versions = [
+        MockVersionResponse(
+            id=f"{batch_id}-{index + 1}",
+            thumbnail=f"https://via.placeholder.com/320x320/{color}/fff?text=G{index + 1}",
+            prompt=f"{prompt_prefix} · 方案 {index + 1}",
+            engine=payload.engine,
+            timestamp=now.isoformat(),
+            starred=False,
+            status="completed",
+            category=payload.category,
+            pipeline=payload.pipeline,
+        )
+        for index, color in enumerate(palette)
+    ]
+
+    return MockGenerateResponse(
+        generated_at=now.isoformat(),
+        summary=f"已生成 3 个 mock 素材版本，可继续在前端预览、收藏和比对。",
+        versions=versions,
+    )
+
+
 @router.get("", response_model=List[AssetResponse])
 async def list_assets(
     asset_type: Optional[AssetType] = None,
@@ -179,7 +248,7 @@ async def list_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """List creative assets for the current user."""
     from sqlalchemy import text
@@ -210,7 +279,7 @@ async def list_assets(
 async def get_asset(
     asset_id: UUID,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get a single creative asset."""
     from sqlalchemy import text
@@ -228,7 +297,7 @@ async def get_asset(
 async def list_asset_versions(
     asset_id: UUID,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Get version history for a creative asset."""
     from sqlalchemy import text
@@ -253,7 +322,7 @@ async def regenerate_asset(
     new_prompt: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     redis=Depends(get_redis),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Regenerate an asset, creating a new version."""
     from sqlalchemy import text
@@ -295,7 +364,7 @@ async def create_pipeline(
     payload: PipelineCreate,
     db: AsyncSession = Depends(get_db),
     redis=Depends(get_redis),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Create a multi-step creative generation pipeline."""
     from sqlalchemy import text
@@ -330,7 +399,7 @@ async def create_pipeline(
 async def get_pipeline_status(
     pipeline_id: UUID,
     db: AsyncSession = Depends(get_read_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Check the status of a creative pipeline."""
     from sqlalchemy import text
