@@ -27,6 +27,7 @@
 ## 主要职责
 
 - 将资讯任务整理成时间窗口、来源列表、主题偏好和目标输出。
+- 按 `news_workflow.entry_rules.semantic_intent` 做语义分类，并输出 `intent_type`、`source_type`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`；不得只用关键词命中或自然语言解释替代结构化结果。
 - 调度 `site-preflight-check` 做外部站点守门。
 - 在登录态失效、Cookie 过期、Bridge 不可用时进入恢复或人工确认节点。
 - 组织 `weread-wechat-digest` 的执行输入。
@@ -46,6 +47,7 @@
 ## 输出
 
 - 资讯执行计划
+- 语义分类字段：`intent_type`、`source_type`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`
 - 守门或恢复下一跳
 - `weread-wechat-digest` 执行输入
 - 是否允许提交、推送或归档的判断
@@ -53,6 +55,7 @@
 ## 边界
 
 - 不绕过登录态守门。
+- 不忽略 `hard_exclusion_hit`；如果任务实际是开发问题或系统性规则问题，必须回流对应 workflow。
 - 不直接伪造摘要结果。
 - 不替代 `weread-wechat-digest` 做浏览器采集和正文摘要。
 - 不替代 `site-session-recovery` 完成人工登录。

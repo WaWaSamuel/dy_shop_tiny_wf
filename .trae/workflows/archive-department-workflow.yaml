@@ -8,11 +8,26 @@ department: 经营档案 / 复盘部
 minister_role: process-archive-agent
 
 entry_rules:
-  - workflow_terminal_state in ["completed", "paused", "cancelled", "blocked", "optimized", "accepted"]
+  semantic_intent:
+    allowed: false
+    classifier_agent: process-archive-agent
+    output_required:
+      - archive_reason
+      - workflow_terminal_state
+      - archive_allowed
+    rule: 归档入口不依赖自由语义判断，只接受上游 workflow 的明确终态和归档请求。
+  hard_triggers:
+    - rule: workflow_terminal_state in ["completed", "paused", "cancelled", "blocked", "optimized", "accepted"]
+      route: archive_department_workflow
+  hard_exclusions:
+    - rule: workflow_terminal_state is null or archive_allowed != true
+      route: upstream_workflow
 
 workflow_controller: process-archive-agent
 
 state_schema:
+  - archive_reason
+  - archive_allowed
   - workflow_id
   - run_id
   - decisions

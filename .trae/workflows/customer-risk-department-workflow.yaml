@@ -9,12 +9,35 @@ parent_workflow: ecommerce_workflow
 minister_role: exception-order-agent
 
 entry_rules:
-  - parent_workflow == "ecommerce_workflow"
-  - task_domain in ["order_exception", "risk", "customer_service"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: exception-order-agent
+    output_required:
+      - intent_type
+      - risk_stage
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许客服风控入口角色用 LLM 判断异常订单、售后风险或人工确认阶段，但必须落成结构化字段。
+  hard_triggers:
+    - rule: parent_workflow == "ecommerce_workflow"
+      route: customer_risk_department_workflow
+    - rule: task_domain in ["order_exception", "risk", "customer_service"]
+      route: customer_risk_department_workflow
+  hard_exclusions:
+    - rule: catalog, candidate, sourcing, material, or listing preparation without customer/order risk
+      route: ecommerce_workflow
+    - rule: irreversible business action without human confirmation
+      route: human_gate
 
 workflow_controller: ecommerce-orchestrator-agent
 
 state_schema:
+  - intent_type
+  - risk_stage
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - order_exception
   - logistics_state
   - exception_result

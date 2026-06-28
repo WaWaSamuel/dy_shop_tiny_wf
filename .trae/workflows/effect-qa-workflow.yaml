@@ -9,12 +9,35 @@ parent_workflow: development_workflow
 minister_role: ui-ux-review-agent
 
 entry_rules:
-  - parent_workflow == "development_workflow"
-  - task_domain in ["uiux", "effect_qa", "visual_review", "interaction_review"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: ui-ux-review-agent
+    output_required:
+      - intent_type
+      - effect_scope
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许效果 QA 入口角色用 LLM 判断视觉、交互、信息层级或体验评审范围，但必须落成结构化字段。
+  hard_triggers:
+    - rule: parent_workflow == "development_workflow"
+      route: effect_qa_workflow
+    - rule: task_domain in ["uiux", "effect_qa", "visual_review", "interaction_review"]
+      route: effect_qa_workflow
+  hard_exclusions:
+    - rule: API, data, or main process regression only
+      route: function_qa_workflow
+    - rule: no page implementation or UI change is provided
+      route: development_workflow
 
 workflow_controller: ui-ux-review-agent
 
 state_schema:
+  - intent_type
+  - effect_scope
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - page_implementation
   - screenshots
   - uiux_findings

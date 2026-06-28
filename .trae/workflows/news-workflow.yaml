@@ -8,8 +8,26 @@ department: 情报部
 minister_role: news-digest-agent
 
 entry_rules:
-  - task_domain in ["news", "digest", "weread"]
-  - user_goal contains one of ["摘要", "公众号", "微信读书", "日报", "热点"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: news-digest-agent
+    output_required:
+      - intent_type
+      - source_type
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许入口角色用 LLM 判断资讯来源、时间窗口和摘要目标，但必须落成结构化字段。
+  hard_triggers:
+    - rule: task_domain in ["news", "digest", "weread"]
+      route: news_workflow
+    - rule: user goal is WeRead, public account article, hot topic, daily digest, or news summary
+      route: news_workflow
+  hard_exclusions:
+    - rule: Web page/API/code implementation or UI bug
+      route: development_workflow
+    - rule: workflow/routing/rule/role dissatisfaction
+      route: self_optimization_workflow
 
 workflow_guardrails:
   - key: site_preflight_required
@@ -38,6 +56,11 @@ human_gates:
 workflow_controller: news-digest-agent
 
 state_schema:
+  - intent_type
+  - source_type
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - task_brief
   - time_window
   - source_list

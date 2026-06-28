@@ -38,6 +38,37 @@
 
 ## 选流规则
 
+### `entry_rules` 写法约定
+
+所有 workflow 的 `entry_rules` 不应只写成关键词命中列表。统一采用三段式：
+
+```yaml
+entry_rules:
+  semantic_intent:
+    allowed: true
+    classifier_agent: <workflow入口agent>
+    output_required:
+      - intent_type
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: <允许 LLM 做语义分类，但必须结构化输出>
+  hard_triggers:
+    - rule: <强触发条件>
+      route: <target_workflow>
+  hard_exclusions:
+    - rule: <强排除条件>
+      route: <fallback_workflow>
+```
+
+解释：
+
+- `semantic_intent` 是入口角色的语义分类契约，不是自由发挥许可。
+- `hard_triggers` 是可审计的兜底触发条件。
+- `hard_exclusions` 优先级高于普通语义命中，用来避免误入错误 workflow。
+- LLM 可以理解“用户到底想干什么”，但必须输出 `intent_type`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit` 等结构化字段。
+- workflow edge、guard 和后续节点只能消费这些结构化字段与硬规则，不得消费“我感觉应该走某流”这类自然语言解释。
+
 ### 进入 `development_workflow`
 
 当任务主要涉及：
@@ -129,11 +160,24 @@
 
 ## 何时允许 LLM 路由
 
-仅允许在工作流内部的局部分流中使用，例如：
+允许 LLM 做“语义分类”，但不允许做不可审计的自由路由。
+
+允许范围：
+
+- 一级选流时，`ceo-orchestrator-agent` 可以把用户意图分类成结构化字段，再由 policy 和 workflow 契约裁决。
+- 进入 workflow 后，入口角色可以根据 `entry_rules.semantic_intent.output_required` 产出结构化 intent 字段。
+- 工作流内部的局部分流，例如：
 
 - 候选品排序后的建议说明
 - 异常订单的建议处理方式
 - 资讯摘要的压缩表达
+
+强制要求：
+
+- LLM 语义判断必须落成结构化字段。
+- 硬排除条件优先级高于语义命中。
+- 可见流转说明默认只输出 `【流转留痕】` 精简段，写明命中了 `semantic_intent`、`hard_triggers` 还是 `hard_exclusions`。
+- `acting_agent`、`current_node`、`node_completion_sources`、`pass_flags` 等细粒度状态必须进入内部 handoff / workflow state；除非宿主要求排查证据，否则不在普通聊天回复里展开。
 
 不允许把以下动作完全交给自由 LLM 决策：
 

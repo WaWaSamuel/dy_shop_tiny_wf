@@ -58,9 +58,11 @@ CEO 只需要知道一级 workflow 与入口角色。workflow 内部有哪些 ag
 
 不得只声明“属于某个 workflow”就直接实现、解释或自行分派。没有加载入口角色时，视为流转不完整。
 
+workflow 的 `entry_rules` 应采用“语义分类契约 + 硬触发 + 硬排除”的结构。LLM 可以帮助入口角色理解用户语义，但必须输出结构化字段；后续 workflow 只能消费结构化字段和硬规则，不能消费自由解释。
+
 ## 4. 固定流转输出模板
 
-每次发生 workflow 选择、agent / skill 分发、workflow handoff、回流或收口判断时，必须使用以下结构化模板输出或放入 handoff 包。
+每次发生 workflow 选择、agent / skill 分发、workflow handoff、回流或收口判断时，对外可见回复只输出精简版 `【流转留痕】`。节点状态和完成态来源仍必须写入内部 handoff 包、workflow state 或归档输入，但默认不在聊天回复里展开。
 
 ```text
 【流转留痕】
@@ -68,30 +70,18 @@ CEO 只需要知道一级 workflow 与入口角色。workflow 内部有哪些 ag
 事实来源：<orchestration-policy / workflow yaml / registry / 入口角色文件 / 运行期数据>
 流转动作：<from workflow/node/agent/skill> -> <to workflow/node/agent/skill>
 触发条件：<命中的 entry rule / edge condition / guard / review / failure policy>
+entry_rule_type：<semantic_intent / hard_triggers / hard_exclusions>
 传递上下文：<任务摘要、关键输入、风险、阻断项、保留事实>
 能力边界：<当前节点不做什么、必须交给谁>
-
-【节点状态】
-acting_agent：<当前执行 agent，若是 skill 则写 acting_skill>
-current_node：<当前 workflow node key>
-workflow_edge：<from -> to>
-next_required_node：<下一必经节点>
-target_agent_or_skill：<下一跳目标>
-target_file：<registry 中确认的文件路径>
-target_loaded：<true / false>
-
-【完成态来源】
-pass_flags：<本节点可写状态>
-node_completion_sources：<每个 *_passed / *_completed 的产出来源>
-handoff_required：<true / false>
-archive_allowed：<true / false>
 ```
 
 规则：
 
 - 模板是可审计摘要，不是模型内部隐式推理。
-- `*_passed`、`*_completed`、`acceptance_passed`、`development_workflow_completed` 等完成态必须有明确来源。
-- 动作名不能替代角色执行。可见摘要里出现 QA、review、验收、归档等阶段动作时，必须同时显示对应执行者、节点、目标文件和可写状态。
+- 可见回复默认不输出 `【节点状态】` 和 `【完成态来源】`，除非宿主明确要求排查流程证据、QA 证据或验收来源。
+- 内部 handoff 包仍必须保留 `acting_agent`、`current_node`、`intent_type`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`、`workflow_edge`、`next_required_node`、`target_agent_or_skill`、`target_file`、`target_loaded`、`pass_flags`、`node_completion_sources`、`handoff_required`、`archive_allowed` 等字段。
+- `*_passed`、`*_completed`、`acceptance_passed`、`development_workflow_completed` 等完成态必须有明确来源，但来源默认进入内部 handoff / state，不在普通回复里展开。
+- 动作名不能替代角色执行。出现 QA、review、验收、归档等阶段动作时，必须在内部 handoff 中记录对应执行者、节点、目标文件和可写状态。
 - 上游角色只能生成 handoff 包，不能代写下游节点的通过态。
 
 ## 5. 一级分流边界
@@ -141,6 +131,13 @@ make test
 ## 8. 允许 / 禁止 LLM 判断的范围
 
 LLM 可以在 workflow 内部做局部分流和表达压缩。
+
+LLM 也可以在 workflow 入口做语义分类，但必须满足：
+
+- 分类结果写入结构化字段，例如 `intent_type`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`。
+- 硬排除条件优先级高于语义命中。
+- 可见流转说明只通过 `【流转留痕】` 写明命中的是 `semantic_intent`、`hard_triggers` 还是 `hard_exclusions`。
+- 后续节点只能消费结构化字段和 workflow 规则，不能消费自由解释。
 
 以下动作不允许完全交给自由 LLM 决策：
 

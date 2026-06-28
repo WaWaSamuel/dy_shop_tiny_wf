@@ -9,12 +9,37 @@ parent_workflow: ecommerce_workflow
 minister_role: creative-strategy-agent
 
 entry_rules:
-  - parent_workflow == "ecommerce_workflow"
-  - task_domain in ["creative", "material", "copywriting", "detail_page"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: creative-strategy-agent
+    output_required:
+      - intent_type
+      - content_stage
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许内容素材入口角色用 LLM 判断标题、卖点、详情页结构或素材 brief 阶段，但必须落成结构化字段。
+  hard_triggers:
+    - rule: parent_workflow == "ecommerce_workflow"
+      route: content_material_department_workflow
+    - rule: task_domain in ["creative", "material", "copywriting", "detail_page"]
+      route: content_material_department_workflow
+  hard_exclusions:
+    - rule: catalog quality, product candidate, or listing readiness
+      route: product_department_workflow
+    - rule: supplier sourcing or price comparison
+      route: supply_chain_department_workflow
+    - rule: order exception or customer risk
+      route: customer_risk_department_workflow
 
 workflow_controller: ecommerce-orchestrator-agent
 
 state_schema:
+  - intent_type
+  - content_stage
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - confirmed_product_direction
   - supplier_result
   - creative_result

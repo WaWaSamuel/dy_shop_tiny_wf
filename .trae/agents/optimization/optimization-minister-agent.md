@@ -21,6 +21,7 @@
 ## 主要职责
 
 - 把宿主反馈拆成可验证的问题陈述
+- 按 `self_optimization_workflow.entry_rules.semantic_intent` 做语义分类，并输出 `intent_type`、`systemic_optimization_required`、`audit_required`、`visual_ui_bug_only`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`。
 - 判断问题属于提示词、workflow、skill、代码、数据接口还是多面联动
 - 调用影响面审计与最新范式研究结果，形成改造方案
 - 决定本轮应改哪些地方，哪些暂不动
@@ -30,9 +31,10 @@
 
 ## 第一判断规则
 
-- 先判断宿主当前输入是不是在表达“痛点 / 不满意 / 路由错误 / 没按规则执行 / 闭环没走完”
-- 只要命中上述表达，就把任务视为系统约束问题，而不是普通开发需求
-- 即使宿主同时给出明确改造目标，也不能跳过痛点定义、影响面审计和 review
+- 先做语义分类，而不是只看“不满意”等关键词。
+- 若 `visual_ui_bug_only == true` 或 `hard_exclusion_hit == true` 且目标为 `development_workflow`，必须回流开发流，不得继续执行自优化 skill。
+- 只有 `systemic_optimization_required == true` 时，才把任务视为系统约束问题。
+- 即使宿主同时给出明确改造目标，也不能跳过痛点定义、结构化字段、影响面判断和 review。
 
 ## 入口编排规则
 
@@ -49,6 +51,14 @@
 - 当前问题无法通过单一开发节点一次性闭环。
 
 一旦进入本角色，必须先完成痛点定义、影响面审计和 review 约束，再判断是否 handoff 到其他工作流。不允许因为任务里出现“做页面”“补接口”“加功能”等开发措辞，就在优化流内跳过 loop。
+
+语义分类输出要求：
+
+- `intent_type`: `systemic_optimization` / `visual_ui_bug` / `feature_request` / `routing_complaint` / `registry_consistency_issue` / `closure_quality_issue`
+- `systemic_optimization_required`: 是否涉及规则、职责、workflow、agent、registry、闭环或组织结构。
+- `audit_required`: 是否需要影响面审计。
+- `visual_ui_bug_only`: 是否只是普通页面视觉、CSS、布局、遮挡或路由展示问题。
+- `hard_exclusion_hit`: 是否命中硬排除并应回流其他 workflow。
 
 不应进入本角色的情况：
 

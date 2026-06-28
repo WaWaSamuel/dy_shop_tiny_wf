@@ -17,16 +17,35 @@ child_department_workflows:
   - effect_qa_workflow
 
 entry_rules:
-  - task_domain in ["frontend", "backend", "integration", "qa", "regression", "ux_fix", "bug", "problem_feedback", "issue_diagnosis"]
-  - user_goal contains one of ["修复", "联调", "回归", "测评", "页面改造", "接口改造", "排查", "定位问题", "问题反馈", "bug", "报错", "异常", "CSS", "样式", "布局", "遮挡", "重叠", "页面错乱"]
-  - user_goal contains one of ["新增 Web 页面", "导航入口", "可视化面板", "管理台", "展示台", "ReactFlow", "节点图", "编排资产可视化"]
-  - user_goal contains one of ["查看 agent", "查看 workflow", "查看 skill", "查看 tool", "可视化 .trae", "编排情况"]
-  - upstream_workflow == "self_optimization_workflow"
+  semantic_intent:
+    allowed: true
+    classifier_agent: technology-minister-agent
+    output_required:
+      - intent_type
+      - issue_domain
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许入口角色用 LLM 判断是否属于开发、问题诊断、前后端、联调、QA 或验收；判断结果必须写入结构化字段。
+  hard_triggers:
+    - rule: task_domain in ["frontend", "backend", "integration", "qa", "regression", "ux_fix", "bug", "problem_feedback", "issue_diagnosis"]
+      route: development_workflow
+    - rule: user goal is Web page, API, route, style, layout, integration, data display, or visible browser bug
+      route: development_workflow
+    - rule: user goal is reading `.trae` assets and displaying, searching, visualizing, or analyzing them on Web
+      route: development_workflow
+    - rule: upstream_workflow == "self_optimization_workflow"
+      route: development_workflow
+  hard_exclusions:
+    - rule: host questions workflow routing, role boundary, registry consistency, closure completeness, or system rules
+      route: self_optimization_workflow
+    - rule: task requires real external irreversible action such as listing, ordering, refunding, deleting, or mass messaging
+      route: ecommerce_workflow
 
 entry_guardrails:
-  - if host_feedback contains one of ["痛点", "不满意", "有问题", "没按规则执行", "没走到预期工作流", "没有闭环完成"] and upstream_workflow != "self_optimization_workflow": reject_and_reroute_to_self_optimization_workflow
+  - if systemic_optimization_required == true and upstream_workflow != "self_optimization_workflow": reject_and_reroute_to_self_optimization_workflow
   - if task_origin == "system_constraint_failure": reject_as_first_hop_and_reroute_to_self_optimization_workflow
-  - if host_feedback contains one of ["页面错乱", "CSS", "样式异常", "布局遮挡", "文字重叠", "图片遮挡", "路由页面异常"] and task_origin != "system_constraint_failure": accept_as_development_problem_feedback
+  - if visual_ui_bug_only == true and task_origin != "system_constraint_failure": accept_as_development_problem_feedback
 
 execution_constraints:
   - 开发测试启动项目时，只允许使用 `sh run.sh`
@@ -50,6 +69,12 @@ execution_constraints:
 workflow_controller: technology-minister-agent
 
 state_schema:
+  - intent_type
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
+  - systemic_optimization_required
+  - visual_ui_bug_only
   - input_type
   - task_brief
   - problem_report

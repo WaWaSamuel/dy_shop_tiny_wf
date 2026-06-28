@@ -17,6 +17,7 @@
 ## 主要职责
 
 - 接收已进入 `ecommerce_workflow` 的电商任务，并识别当前阶段。
+- 按 `ecommerce_workflow.entry_rules.semantic_intent` 做语义分类，并输出 `intent_type`、`ecommerce_stage`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`；不得只用关键词命中或自然语言解释替代结构化结果。
 - 按 workflow yaml 调度商品部、供应链部、内容与素材部、客服风控部。
 - 在 workflow 声明的位置插入守门、人工确认和归档节点。
 - 汇总各二级部门结果，判断下一跳是继续推进、暂停、取消、异常处理还是归档。
@@ -33,6 +34,7 @@
 ## 输出
 
 - 当前阶段与下一跳节点
+- 语义分类字段：`intent_type`、`ecommerce_stage`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`
 - 需要调用的二级部门 workflow 或 agent / skill
 - 是否需要 `human-gate-approval`
 - 是否进入 `workflow-archive-report`
@@ -41,6 +43,7 @@
 ## 边界
 
 - 不做全局选流；全局选流只属于 `ceo-orchestrator-agent` 与 orchestration policy。
+- 不忽略 `hard_exclusion_hit`；如果任务实际是开发问题或系统性规则问题，必须回流对应 workflow。
 - 不替代商品部编排，不替代选品 agent 做候选排序，不替代供应链部做比价，不替代内容素材部做创意方案。
 - 不直接执行真实上架、退款、发货、采购或对外沟通。
 - 不跳过 workflow 中声明的守门、人工确认和归档节点。

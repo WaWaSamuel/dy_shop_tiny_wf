@@ -10,9 +10,28 @@ department: 优化部门
 minister_role: self-optimization-agent
 
 entry_rules:
-  - host_feedback contains one of ["不满意", "有问题", "再优化", "还不对", "继续改", "升级", "优化一下", "重构一下", "体验不好", "方案不行"]
-  - host_feedback contains one of ["为什么没有", "没走到", "没有走到", "没按规则", "角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致", "编排资产不准"]
-  - task_domain in ["self_optimization", "framework_refactor", "host_feedback", "system_upgrade"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: self-optimization-agent
+    output_required:
+      - intent_type
+      - systemic_optimization_required
+      - audit_required
+      - visual_ui_bug_only
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许入口角色用 LLM 判断宿主反馈是否是系统性不满意、规则/闭环问题或普通 UI bug；判断结果必须写入结构化字段，后续 edge 只消费字段。
+  hard_triggers:
+    - rule: host questions workflow routing, role boundary, registry consistency, closure completeness, rule execution, or company structure
+      route: self_optimization_workflow
+    - rule: task_domain in ["self_optimization", "framework_refactor", "host_feedback", "system_upgrade"]
+      route: self_optimization_workflow
+  hard_exclusions:
+    - rule: visual UI bug only, CSS/layout/overlap/router display issue, or single Web interaction defect
+      route: development_workflow
+    - rule: new Web feature or `.trae` visualization feature without systemic dissatisfaction
+      route: development_workflow
 
 workflow_controller: self-optimization-agent
 
@@ -27,6 +46,10 @@ execution_constraints:
   - 若需要代码改造，`development_acceptance_passed` 只能来自 `host-acceptance-agent` 的验收通过结果
 
 state_schema:
+  - intent_type
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - host_feedback
   - trigger_keywords
   - dissatisfaction_points
@@ -194,8 +217,8 @@ failure_policy:
   - if acting_agent is null or current_node is null or workflow_edge is null or next_required_node is null: mark_as_workflow_violation_and_reroute_to_diagnose
   - if current_node == "diagnose" and acting_agent != "self-optimization-agent": mark_as_workflow_violation_and_reroute_to_diagnose
   - if visual_ui_bug_only == true: reroute_to_development_workflow
-  - if host_feedback contains one of ["不满意", "为什么没有", "没走到", "没有走到", "没按规则", "角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致"] and role_execution_trace missing "self-optimization-agent": reroute_to_diagnose
-  - if host_feedback contains one of ["角色不存在", "仍展示", "刷新没用", "旧 ID", "registry 和页面读取源不一致", "编排资产不准"] and systemic_optimization_required == true and audit_required == true and impacted_surfaces is null: reroute_to_surface_audit
+  - if systemic_optimization_required == true and role_execution_trace missing "self-optimization-agent": reroute_to_diagnose
+  - if systemic_optimization_required == true and audit_required == true and impacted_surfaces is null: reroute_to_surface_audit
   - if current_node == "surface_audit" and systemic_optimization_required != true: mark_as_workflow_violation_and_reroute_to_development_workflow
   - if current_node == "surface_audit" and audit_required != true: mark_as_workflow_violation_and_reroute_to_diagnose
   - if intake_log_written != true: retry_log_feedback

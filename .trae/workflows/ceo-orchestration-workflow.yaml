@@ -8,15 +8,33 @@ department: CEO / 总经理
 minister_role: ceo-orchestrator-agent
 
 entry_rules:
-  - any_new_project_task == true
+  semantic_intent:
+    allowed: true
+    classifier_agent: ceo-orchestrator-agent
+    output_required:
+      - intent_type
+      - selected_primary_workflow
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: CEO 入口允许用 LLM 理解宿主意图，但必须落成结构化一级选流字段，不能只给自然语言判断。
+  hard_triggers:
+    - rule: any_new_project_task == true
+      route: ceo_orchestration_workflow
+  hard_exclusions:
+    - rule: selected_primary_workflow is already confirmed and entry_role_loaded == true
+      route: selected_primary_workflow
 
 workflow_controller: ceo-orchestrator-agent
 
 state_schema:
   - user_task
+  - intent_type
   - domain_classification
   - selected_primary_workflow
   - selected_department_workflow
+  - routing_confidence
+  - hard_exclusion_hit
+  - entry_role_loaded
   - boundary_status
 
 roles:

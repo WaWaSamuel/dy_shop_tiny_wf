@@ -2,13 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Background,
+  BaseEdge,
   Controls,
+  EdgeLabelRenderer,
   MiniMap,
   Panel,
   ReactFlow,
   Handle,
   Position,
+  ViewportPortal,
   type Edge,
+  type EdgeProps,
+  type EdgeTypes,
   type Node,
   type NodeProps,
 } from '@xyflow/react';
@@ -52,8 +57,8 @@ import type {
 const { Title, Text, Paragraph } = Typography;
 
 const kindConfig: Record<OrchestrationNodeKind, { label: string; color: string; icon: React.ReactNode }> = {
-  workflow: { label: 'Workflow', color: 'blue', icon: <DeploymentUnitOutlined /> },
-  agent: { label: 'Agent', color: 'purple', icon: <RobotOutlined /> },
+  workflow: { label: 'Workflow', color: 'geekblue', icon: <DeploymentUnitOutlined /> },
+  agent: { label: 'Agent', color: 'magenta', icon: <RobotOutlined /> },
   skill: { label: 'Skill', color: 'green', icon: <FunctionOutlined /> },
   tool: { label: 'Tool', color: 'gold', icon: <ToolOutlined /> },
   node: { label: 'Node', color: 'default', icon: <PartitionOutlined /> },
@@ -66,7 +71,7 @@ function OrchestrationNode({ data }: NodeProps) {
 
   return (
     <div className={`orchestration-node orchestration-node--${nodeData.kind}`}>
-      <Handle type="target" position={Position.Left} />
+      <Handle className="orchestration-handle--input" type="target" position={Position.Left} />
       <div className="orchestration-node-header">
         <span className="orchestration-node-icon">{config.icon}</span>
         <Tag color={config.color} style={{ margin: 0 }}>
@@ -85,12 +90,158 @@ function OrchestrationNode({ data }: NodeProps) {
           {nodeData.nodeCount} nodes · {nodeData.edgeCount} edges
         </div>
       ) : null}
-      <Handle type="source" position={Position.Right} />
+      <Handle className="orchestration-handle--output" type="source" position={Position.Right} />
     </div>
   );
 }
 
 const nodeTypes = { orchestrationNode: OrchestrationNode };
+const ORCHESTRATION_NODE_WIDTH = 260;
+const ORCHESTRATION_NODE_CENTER_Y = 56;
+
+function getParallelNumber(data: Record<string, unknown> | undefined, key: string, fallback: number) {
+  const value = data?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getCubicPoint(
+  start: number,
+  controlA: number,
+  controlB: number,
+  end: number,
+  progress = 0.5,
+) {
+  const inverse = 1 - progress;
+  return (
+    inverse ** 3 * start +
+    3 * inverse ** 2 * progress * controlA +
+    3 * inverse * progress ** 2 * controlB +
+    progress ** 3 * end
+  );
+}
+
+function toFlowElementId(id: string) {
+  return id.replace(/[^a-zA-Z0-9_-]/g, '__');
+}
+
+function getBezierGeometry(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  edgeData?: Record<string, unknown>,
+) {
+  const parallelCount = getParallelNumber(edgeData, 'parallelCount', 1);
+  const parallelOffset = getParallelNumber(edgeData, 'parallelOffset', 0);
+  const isSelfLoop = Boolean(edgeData?.isSelfLoop);
+  const offset = parallelCount > 1 ? parallelOffset * 0.45 : 0;
+  const horizontalDistance = targetX - sourceX;
+  const direction = horizontalDistance >= 0 ? 1 : -1;
+  const curveDistance = Math.max(120, Math.abs(horizontalDistance) * 0.5);
+
+  const controlA = isSelfLoop
+    ? { x: sourceX + 180, y: sourceY - 120 - Math.abs(offset) }
+    : { x: sourceX + direction * curveDistance, y: sourceY + offset };
+  const controlB = isSelfLoop
+    ? { x: targetX - 180, y: targetY - 120 - Math.abs(offset) }
+    : { x: targetX - direction * curveDistance, y: targetY + offset };
+
+  const path = `M ${sourceX},${sourceY} C ${controlA.x},${controlA.y} ${controlB.x},${controlB.y} ${targetX},${targetY}`;
+  const labelX = getCubicPoint(sourceX, controlA.x, controlB.x, targetX);
+  const labelY = getCubicPoint(sourceY, controlA.y, controlB.y, targetY);
+
+  return { path, labelX, labelY };
+}
+
+function OrchestrationBezierEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  markerEnd,
+  style,
+  label,
+  data,
+}: EdgeProps) {
+  const edgeData = data as Record<string, unknown> | undefined;
+  const { path: edgePath, labelX, labelY } = getBezierGeometry(sourceX, sourceY, targetX, targetY, edgeData);
+
+  return (
+    <>
+      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
+      {label ? (
+        <EdgeLabelRenderer>
+          <div
+            className="orchestration-edge-label"
+            style={{
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            }}
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
+  );
+}
+
+const edgeTypes: EdgeTypes = { floatingBezier: OrchestrationBezierEdge };
+
+function OrchestrationStaticEdges({
+  nodes,
+  edges,
+}: {
+  nodes: Node<OrchestrationGraphNodeData>[];
+  edges: Edge[];
+}) {
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+
+  return (
+    <ViewportPortal>
+      <svg className="orchestration-static-edge-layer" aria-hidden="true">
+        <defs>
+          <marker
+            id="orchestration-edge-arrow"
+            markerWidth="12"
+            markerHeight="12"
+            refX="10"
+            refY="6"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M2,2 L10,6 L2,10 Z" />
+          </marker>
+        </defs>
+        {edges.map((edge) => {
+          const sourceNode = nodeById.get(edge.source);
+          const targetNode = nodeById.get(edge.target);
+          if (!sourceNode || !targetNode) return null;
+
+          const edgeData = edge.data as Record<string, unknown> | undefined;
+          const sourceX = sourceNode.position.x + ORCHESTRATION_NODE_WIDTH;
+          const sourceY = sourceNode.position.y + ORCHESTRATION_NODE_CENTER_Y;
+          const targetX = targetNode.position.x;
+          const targetY = targetNode.position.y + ORCHESTRATION_NODE_CENTER_Y;
+          const { path, labelX, labelY } = getBezierGeometry(sourceX, sourceY, targetX, targetY, edgeData);
+          const labelText = edge.label ? String(edge.label) : '';
+
+          return (
+            <g key={edge.id} className="orchestration-static-edge">
+              {labelText ? <title>{labelText}</title> : null}
+              <path d={path} markerEnd="url(#orchestration-edge-arrow)" />
+              {labelText ? (
+                <foreignObject x={labelX - 130} y={labelY - 20} width={260} height={80}>
+                  <div className="orchestration-edge-label orchestration-edge-label--svg">{labelText}</div>
+                </foreignObject>
+              ) : null}
+            </g>
+          );
+        })}
+      </svg>
+    </ViewportPortal>
+  );
+}
 
 function listText(items?: string[]) {
   if (!items || items.length === 0) return '暂无';
@@ -261,8 +412,38 @@ export default function OrchestrationGraph() {
 
   const workflowGraph = workflowId ? payload?.workflowGraphs[workflowId] : null;
   const currentGraph = workflowGraph || payload?.rootGraph || { nodes: [], edges: [] };
-  const nodes = currentGraph.nodes as Node<OrchestrationGraphNodeData>[];
-  const edges = currentGraph.edges as Edge[];
+  const rawNodes = currentGraph.nodes as Node<OrchestrationGraphNodeData>[];
+  const flowNodeIdMap = useMemo(
+    () => new Map(rawNodes.map((node) => [node.id, toFlowElementId(node.id)])),
+    [rawNodes],
+  );
+  const nodes = useMemo(
+    () =>
+      rawNodes.map((node) => ({
+        ...node,
+        id: flowNodeIdMap.get(node.id) || toFlowElementId(node.id),
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      })),
+    [flowNodeIdMap, rawNodes],
+  );
+  const edges = useMemo(
+    () => {
+      const mappedEdges = (currentGraph.edges as Edge[]).map((edge, index) => {
+        return {
+          id: `orchestration-edge-${index}`,
+          source: flowNodeIdMap.get(edge.source) || toFlowElementId(edge.source),
+          target: flowNodeIdMap.get(edge.target) || toFlowElementId(edge.target),
+          label: edge.label,
+          style: edge.style,
+          data: edge.data,
+          type: 'floatingBezier',
+        };
+      });
+      return mappedEdges;
+    },
+    [currentGraph.edges, flowNodeIdMap],
+  );
   const isWorkflowView = Boolean(workflowId);
 
   const openWorkflow = useCallback(
@@ -291,6 +472,13 @@ export default function OrchestrationGraph() {
   );
 
   const selectedWorkflow = workflowId || '';
+  const goToPreviousLayer = useCallback(() => {
+    if (workflowGraph?.parentWorkflow && payload?.workflowGraphs[workflowGraph.parentWorkflow]) {
+      navigate(`/project/orchestration/workflows/${workflowGraph.parentWorkflow}`);
+      return;
+    }
+    navigate('/project/orchestration');
+  }, [navigate, payload, workflowGraph]);
 
   return (
     <div className="page-shell orchestration-page">
@@ -319,8 +507,8 @@ export default function OrchestrationGraph() {
           </Space>
           <Space wrap>
             {isWorkflowView ? (
-              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/project/orchestration')}>
-                返回总图
+              <Button icon={<ArrowLeftOutlined />} onClick={goToPreviousLayer}>
+                返回上一层
               </Button>
             ) : null}
             <Select
@@ -355,7 +543,10 @@ export default function OrchestrationGraph() {
         />
       ) : null}
 
-      <Card className="surface-card orchestration-graph-card" bodyStyle={{ padding: 0 }}>
+      <Card
+        className="surface-card orchestration-graph-card"
+        bodyStyle={{ padding: 0 }}
+      >
         {loading ? (
           <div className="orchestration-loading">
             <Skeleton active paragraph={{ rows: 8 }} />
@@ -364,14 +555,18 @@ export default function OrchestrationGraph() {
           <Empty className="orchestration-empty" description="暂无可展示的编排节点" />
         ) : (
           <ReactFlow
+            key={`${workflowId || 'root'}-${nodes.length}-${edges.length}`}
             nodes={nodes}
-            edges={edges}
+            edges={[]}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
-            fitViewOptions={{ padding: 0.18 }}
+            fitViewOptions={{ padding: 0.24 }}
             onNodeClick={handleNodeClick}
             nodesDraggable
+            onlyRenderVisibleElements={false}
           >
+            <OrchestrationStaticEdges nodes={nodes} edges={edges} />
             <Background color="#ffd6e7" gap={18} />
             <Controls />
             <MiniMap pannable zoomable nodeStrokeWidth={3} />
@@ -382,6 +577,13 @@ export default function OrchestrationGraph() {
                 <Tag color="green">Skill / Tool 只在对应层展示</Tag>
               </Space>
             </Panel>
+            {isWorkflowView ? (
+              <Panel position="top-right" className="orchestration-panel">
+                <Button size="small" icon={<ArrowLeftOutlined />} onClick={goToPreviousLayer}>
+                  返回上一层
+                </Button>
+              </Panel>
+            ) : null}
           </ReactFlow>
         )}
       </Card>

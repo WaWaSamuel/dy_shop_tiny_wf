@@ -18,6 +18,14 @@ PRIMARY_WORKFLOW_IDS = [
     "self_optimization_workflow",
 ]
 CEO_ORCHESTRATOR_AGENT_ID = "ceo-orchestrator-agent"
+ROOT_COLUMN_GAP = 720
+ROOT_ROW_GAP = 260
+WORKFLOW_CHILD_ROW_GAP = 320
+WORKFLOW_CAPABILITY_X = 760
+WORKFLOW_CAPABILITY_COLUMN_GAP = 560
+WORKFLOW_CAPABILITY_ROW_GAP = 320
+WORKFLOW_LAYER_GAP = 520
+WORKFLOW_NODE_ROW_GAP = 220
 
 
 def _discover_repo_root() -> Path:
@@ -207,7 +215,7 @@ def _build_agent_relations(
 
 
 def _root_layout_position(index: int, column: int) -> dict[str, int]:
-    return {"x": column * 520, "y": index * 190}
+    return {"x": column * ROOT_COLUMN_GAP, "y": index * ROOT_ROW_GAP}
 
 
 def _workflow_node_data(workflow: dict[str, Any]) -> dict[str, Any]:
@@ -287,23 +295,30 @@ def _build_root_graph(
                     "source": f"agent:{CEO_ORCHESTRATOR_AGENT_ID}",
                     "target": f"workflow:{workflow_id}",
                     "label": "一级选流",
-                    "animated": True,
+                    "animated": False,
                 }
             )
 
+    _apply_parallel_edge_metadata(edges)
     return {"nodes": nodes, "edges": edges}
 
 
 def _workflow_node_position(index: int) -> dict[str, int]:
-    return {"x": (index % 3) * 420, "y": (index // 3) * 240}
+    return {
+        "x": WORKFLOW_CAPABILITY_X + (index % 3) * WORKFLOW_CAPABILITY_COLUMN_GAP,
+        "y": (index // 3) * WORKFLOW_CAPABILITY_ROW_GAP,
+    }
 
 
 def _workflow_child_position(index: int) -> dict[str, int]:
-    return {"x": 0, "y": index * 240}
+    return {
+        "x": WORKFLOW_CAPABILITY_X + WORKFLOW_CAPABILITY_COLUMN_GAP * (index + 1),
+        "y": -220 + index * 180,
+    }
 
 
 def _workflow_capability_position(index: int) -> dict[str, int]:
-    return {"x": 560 + (index % 3) * 420, "y": (index // 3) * 240}
+    return _workflow_node_position(index)
 
 
 def _merge_unique_values(current: list[Any], incoming: list[Any]) -> list[Any]:
@@ -316,13 +331,92 @@ def _merge_unique_values(current: list[Any], incoming: list[Any]) -> list[Any]:
 
 def _edge_display_props() -> dict[str, Any]:
     return {
-        "type": "smoothstep",
+        "type": "floatingBezier",
         "labelBgPadding": [10, 6],
         "labelBgBorderRadius": 10,
         "labelBgStyle": {"fill": "rgba(255, 255, 255, 0.92)", "fillOpacity": 0.92},
         "labelStyle": {"fontSize": 11, "fontWeight": 600, "fill": "#7c5f6d"},
         "style": {"strokeWidth": 1.8, "stroke": "#d6a6be"},
     }
+
+
+def _apply_parallel_edge_metadata(edges: list[dict[str, Any]]) -> None:
+    """Separate multiple edges between the same two unique nodes in the UI."""
+    grouped_edges: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for edge in edges:
+        source = edge.get("source")
+        target = edge.get("target")
+        if not source or not target:
+            continue
+        grouped_edges.setdefault((source, target), []).append(edge)
+
+    for (source, target), group in grouped_edges.items():
+        total = len(group)
+        for index, edge in enumerate(group):
+            offset = (index - (total - 1) / 2) * 44
+            edge["type"] = "floatingBezier"
+            edge_data = edge.setdefault("data", {})
+            if not isinstance(edge_data, dict):
+                edge_data = {}
+                edge["data"] = edge_data
+            edge_data.update(
+                {
+                    "parallelIndex": index,
+                    "parallelCount": total,
+                    "parallelOffset": offset,
+                    "isSelfLoop": source == target,
+                }
+            )
+
+
+def _apply_readable_workflow_layout(
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    controller_node_id: str | None,
+) -> None:
+    """Lay out the default graph as a left-to-right human-readable flow."""
+    if not nodes:
+        return
+
+    node_ids = {node["id"] for node in nodes}
+    ranks: dict[str, int] = {node_id: 0 for node_id in node_ids}
+    if controller_node_id in node_ids:
+        ranks[controller_node_id] = 0
+
+    for _ in range(len(nodes)):
+        changed = False
+        for edge in edges:
+            source = edge.get("source")
+            target = edge.get("target")
+            if source not in node_ids or target not in node_ids or source == target:
+                continue
+            next_rank = ranks[source] + 1
+            if ranks[target] < next_rank:
+                ranks[target] = next_rank
+                changed = True
+        if not changed:
+            break
+
+    grouped_nodes: dict[int, list[dict[str, Any]]] = {}
+    for node in nodes:
+        grouped_nodes.setdefault(ranks.get(node["id"], 0), []).append(node)
+
+    for rank, rank_nodes in grouped_nodes.items():
+        rank_nodes.sort(key=lambda item: item.get("data", {}).get("nodeKey") or item["id"])
+        total = len(rank_nodes)
+        for index, node in enumerate(rank_nodes):
+            node["position"] = {
+                "x": rank * WORKFLOW_LAYER_GAP,
+                "y": int((index - (total - 1) / 2) * WORKFLOW_NODE_ROW_GAP),
+            }
+
+
+def _is_forward_workflow_edge(edge: dict[str, Any], workflow_node_order: dict[str, int]) -> bool:
+    source_key = edge.get("from")
+    target_key = edge.get("to")
+    if source_key not in workflow_node_order or target_key not in workflow_node_order:
+        return True
+    return workflow_node_order[target_key] > workflow_node_order[source_key]
 
 
 def _build_workflow_graph(
@@ -336,6 +430,11 @@ def _build_workflow_graph(
     edges: list[dict[str, Any]] = []
     node_by_id: dict[str, dict[str, Any]] = {}
     node_key_to_graph_id: dict[str, str] = {}
+    workflow_node_order = {
+        node.get("key"): index
+        for index, node in enumerate(workflow.get("nodes", []))
+        if isinstance(node, dict) and node.get("key")
+    }
 
     def add_or_merge_node(graph_node: dict[str, Any], node_key: str | None, role: str | None) -> None:
         graph_node_id = graph_node["id"]
@@ -460,12 +559,14 @@ def _build_workflow_graph(
                         "source": controller_node_id,
                         "target": child_node_id,
                         "label": "child workflow",
-                        "animated": True,
+                        "animated": False,
                         **_edge_display_props(),
                     }
                 )
 
     for index, edge in enumerate(workflow.get("edges", [])):
+        if not _is_forward_workflow_edge(edge, workflow_node_order):
+            continue
         source_key = edge.get("from")
         target_key = edge.get("to")
         source = node_key_to_graph_id.get(source_key)
@@ -488,6 +589,8 @@ def _build_workflow_graph(
             }
         )
 
+    _apply_parallel_edge_metadata(edges)
+    _apply_readable_workflow_layout(nodes, edges, controller_node_id)
     return {
         "workflowId": workflow["id"],
         "label": workflow["label"],

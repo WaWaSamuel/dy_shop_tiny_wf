@@ -13,8 +13,26 @@ child_department_workflows:
   - customer_risk_department_workflow
 
 entry_rules:
-  - task_domain in ["ecommerce", "catalog", "product", "listing", "order_exception"]
-  - user_goal contains one of ["货盘", "选品", "比价", "素材", "上架", "异常订单"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: ecommerce-orchestrator-agent
+    output_required:
+      - intent_type
+      - ecommerce_stage
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许入口角色用 LLM 判断电商任务阶段，但必须落成商品、供应链、内容素材、客服风控或人工确认等结构化字段。
+  hard_triggers:
+    - rule: task_domain in ["ecommerce", "catalog", "product", "listing", "order_exception"]
+      route: ecommerce_workflow
+    - rule: user goal is catalog, product selection, supplier sourcing, content material, listing, or order exception
+      route: ecommerce_workflow
+  hard_exclusions:
+    - rule: Web page/API/code implementation or UI bug without ecommerce business decision
+      route: development_workflow
+    - rule: workflow/routing/rule/role/registry dissatisfaction
+      route: self_optimization_workflow
 
 workflow_guardrails:
   - key: site_preflight_required
@@ -49,6 +67,11 @@ human_gates:
 workflow_controller: ecommerce-orchestrator-agent
 
 state_schema:
+  - intent_type
+  - ecommerce_stage
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - task_brief
   - catalog_object
   - candidate_list

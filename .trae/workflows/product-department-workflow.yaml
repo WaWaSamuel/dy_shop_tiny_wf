@@ -9,12 +9,37 @@ parent_workflow: ecommerce_workflow
 minister_role: product-minister-agent
 
 entry_rules:
-  - parent_workflow == "ecommerce_workflow"
-  - task_domain in ["catalog", "product", "candidate", "listing_readiness"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: product-minister-agent
+    output_required:
+      - intent_type
+      - product_stage
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许商品部入口角色用 LLM 判断货盘质检、候选发现或上架准备度阶段，但必须落成结构化字段。
+  hard_triggers:
+    - rule: parent_workflow == "ecommerce_workflow"
+      route: product_department_workflow
+    - rule: task_domain in ["catalog", "product", "candidate", "listing_readiness"]
+      route: product_department_workflow
+  hard_exclusions:
+    - rule: supplier sourcing or price comparison
+      route: supply_chain_department_workflow
+    - rule: copywriting, material, or detail page strategy
+      route: content_material_department_workflow
+    - rule: order exception or customer risk
+      route: customer_risk_department_workflow
 
 workflow_controller: product-minister-agent
 
 state_schema:
+  - intent_type
+  - product_stage
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - catalog_object
   - catalog_quality_result
   - candidate_list

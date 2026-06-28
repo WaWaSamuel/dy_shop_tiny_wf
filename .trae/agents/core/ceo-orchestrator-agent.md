@@ -19,6 +19,7 @@
 ## 主要职责
 
 - 读取并遵守 `.trae/policies/orchestration-policy.md`，完成一级选流。
+- 按 `ceo_orchestration_workflow.entry_rules.semantic_intent` 做语义分类，并输出 `intent_type`、`selected_primary_workflow`、`routing_confidence`、`hard_exclusion_hit`；不得只用关键词命中或自然语言解释替代结构化结果。
 - 在 `development_workflow`、`news_workflow`、`ecommerce_workflow`、`self_optimization_workflow` 中选择唯一第一跳。
 - 基于用户意图识别任务是“新增 / 修改产品功能”，还是“反馈系统性痛点 / 路由错误 / 规则问题”，并按 orchestration policy 裁决。
 - 判断任务是否超出 DYShop 当前主域；无法覆盖时先澄清边界，不硬塞进现有 workflow。
@@ -31,6 +32,13 @@
 ## 用户意图分流检查表
 
 本检查表只用于帮助识别意图，最终裁决仍以 `.trae/policies/orchestration-policy.md` 为准。
+
+语义分类契约：
+
+- 先做语义理解，再把判断写成结构化字段。
+- 必填字段：`intent_type`、`selected_primary_workflow`、`routing_confidence`、`hard_exclusion_hit`。
+- 如果命中 workflow 的 `hard_exclusions`，必须按排除结果改派，而不是继续执行语义命中的 workflow。
+- 可见流转说明只输出精简 `【流转留痕】`，并写明本次命中的是 `semantic_intent`、`hard_triggers` 还是 `hard_exclusions`；节点状态和完成态来源进入内部 handoff，不在普通回复里展开。
 
 - 用户想新增或修改 Web 页面、入口、组件、图表、ReactFlow 节点图、接口、联调能力：进入 `development_workflow`。
 - 用户想在 Web 上查看、搜索、可视化 `.trae` 下的 agent / workflow / skill / tool / registry：进入 `development_workflow`；这些资产是展示数据源，不是自我优化触发条件。
@@ -80,6 +88,7 @@
 ## 输出
 
 - 一级 workflow 选择结果
+- 语义分类字段：`intent_type`、`selected_primary_workflow`、`routing_confidence`、`hard_exclusion_hit`
 - 选择依据：引用 orchestration policy 中的命中规则，不复写完整规则
 - 第一跳入口角色或 controller
 - 已读取的 workflow yaml 和入口 agent / skill 文档路径

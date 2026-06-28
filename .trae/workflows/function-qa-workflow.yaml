@@ -9,12 +9,35 @@ parent_workflow: development_workflow
 minister_role: regression-validation-agent
 
 entry_rules:
-  - parent_workflow == "development_workflow"
-  - task_domain in ["regression", "functional_qa", "api_validation", "flow_validation"]
+  semantic_intent:
+    allowed: true
+    classifier_agent: regression-validation-agent
+    output_required:
+      - intent_type
+      - qa_scope
+      - workflow_match
+      - routing_confidence
+      - hard_exclusion_hit
+    rule: 允许功能 QA 入口角色用 LLM 判断回归、接口验证或主流程验证范围，但必须落成结构化 QA 字段。
+  hard_triggers:
+    - rule: parent_workflow == "development_workflow"
+      route: function_qa_workflow
+    - rule: task_domain in ["regression", "functional_qa", "api_validation", "flow_validation"]
+      route: function_qa_workflow
+  hard_exclusions:
+    - rule: visual, interaction, or UI/UX review only
+      route: effect_qa_workflow
+    - rule: no development output or regression scope is provided
+      route: development_workflow
 
 workflow_controller: regression-validation-agent
 
 state_schema:
+  - intent_type
+  - qa_scope
+  - workflow_match
+  - routing_confidence
+  - hard_exclusion_hit
   - change_scope
   - api_status
   - page_status

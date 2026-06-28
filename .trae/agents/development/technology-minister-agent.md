@@ -23,6 +23,7 @@
 ## 主要职责
 
 - 读取 `development_workflow`，按节点和边决定开发流内下一跳。
+- 按 `development_workflow.entry_rules.semantic_intent` 做语义分类，并输出 `intent_type`、`issue_domain`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`；不得只用关键词命中或自然语言解释替代结构化结果。
 - 检查本地开发环境、页面、接口、Bridge 与验证条件是否足够进入开发。
 - 判断问题更偏后端、前端、UI/UX 还是功能回归。
 - 在不具备开发条件时记录阻断原因，并留在入口评估阶段。
@@ -47,6 +48,7 @@
 ## 输出
 
 - 当前现场摘要
+- 语义分类字段：`intent_type`、`issue_domain`、`workflow_match`、`routing_confidence`、`hard_exclusion_hit`
 - 开发前置问题
 - `issue_domain`
 - `page_targets` / `api_targets`
@@ -71,6 +73,8 @@
 
 ## 分派规则
 
+- 先执行 `semantic_intent` 分类：判断输入是新功能、问题反馈、前端、后端、全栈、UI/UX、QA、验收还是应排除到其他 workflow。
+- 如果 `hard_exclusion_hit == true`，必须按 `development_workflow.entry_rules.hard_exclusions` 回流对应 workflow，不能继续开发分派。
 - 输入是问题反馈、bug、报错、异常、页面行为不符合预期、接口失败、主链路断裂，且尚未有明确归因证据：先交给 `issue-diagnosis-agent`。
 - 输入是 Web 页面视觉错乱、CSS 样式异常、布局遮挡、图片或文字重叠、路由页面展示异常或浏览器可见 UI bug：标记为前端问题反馈，先交给 `issue-diagnosis-agent`，不得调用 `change-surface-audit`。
 - 问题偏接口、数据、鉴权、宿主依赖、状态聚合或 tool 后端实现：交给 `backend-development-agent`。
