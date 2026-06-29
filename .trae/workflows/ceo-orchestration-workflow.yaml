@@ -26,7 +26,23 @@ entry_rules:
 
 workflow_controller: ceo-orchestrator-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: ceo-orchestrator-agent
+  handoff_rule: 一级选流和跨 workflow handoff 时，只向目标入口角色传递压缩后的 handoff_packet。
+  return_rule: 目标 workflow 结束后必须回传 result_packet，CEO 只根据结构化结果继续判断、reroute 或收口。
+  logging_rule: agents-log 只记录 packet_id、packet_refs、摘要和状态，不记录完整 packet。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - user_task
   - intent_type
   - domain_classification

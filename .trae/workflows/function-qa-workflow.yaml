@@ -32,7 +32,23 @@ entry_rules:
 
 workflow_controller: regression-validation-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: regression-validation-agent
+  handoff_rule: 功能 QA 入口只接收变更范围、验证目标、已知风险和必要引用。
+  return_rule: 回归结束后必须把 regression_result、pass_flags 和完成态来源压缩为 result_packet 回传 development_workflow。
+  logging_rule: 不记录完整测试过程日志，只记录 packet_refs、验证摘要和失败证据引用。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - qa_scope
   - workflow_match

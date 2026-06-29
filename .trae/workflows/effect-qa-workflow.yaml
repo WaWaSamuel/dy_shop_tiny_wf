@@ -32,7 +32,23 @@ entry_rules:
 
 workflow_controller: ui-ux-review-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: ui-ux-review-agent
+  handoff_rule: 效果 QA 入口只接收页面实现摘要、截图或 artifact 引用、评审目标和约束。
+  return_rule: 效果评审结束后必须把 uiux_findings、pass_flags 和完成态来源压缩为 result_packet 回传 development_workflow。
+  logging_rule: 不记录完整视觉上下文，只记录 packet_refs、截图引用和评审摘要。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - effect_scope
   - workflow_match

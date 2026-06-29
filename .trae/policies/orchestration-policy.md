@@ -20,6 +20,7 @@
    - 部门级 workflow 是一级流内部的二级 SOP，不作为全局第一跳
    - 一级 workflow 被选中后，必须立刻读取该 workflow yaml，并按 `workflow_controller` / `minister_role` / 起始节点加载入口 agent 或 skill
    - 不允许只输出“属于某 workflow”后跳过入口角色直接执行
+   - 跨 workflow 或跨 agent handoff 必须遵守 `.trae/policies/context-isolation-policy.md`，上游只传压缩 `handoff_packet`，下游只回传结构化 `result_packet`
 
 4. `technology-minister-agent` 明确属于开发工作流
    - 它是 `development_workflow` 的起点评估节点
@@ -29,12 +30,25 @@
 
 `ceo-orchestrator-agent` 只完成一级选流，不承担流内阶段判断。选中一级 workflow 后，下一步必须进入该 workflow 的入口角色：
 
+固定执行顺序如下：
+
+1. 静默读取 `AGENTS.md`。
+2. 读取 `.trae/policies/orchestration-policy.md`。
+3. 读取 `.trae/policies/context-isolation-policy.md`。
+4. 选择唯一一级 workflow。
+5. 读取目标 workflow yaml。
+6. 从 workflow 的 `workflow_controller`、`minister_role` 或起始节点确认入口角色。
+7. 通过 registry 找到并读取入口角色文件。
+8. 生成或接收压缩 `handoff_packet`，再交给入口角色继续处理。
+
 - `development_workflow` → 读取 `workflows/development-workflow.yaml`，加载 `technology-minister-agent`
 - `news_workflow` → 读取 `workflows/news-workflow.yaml`，加载 `news-digest-agent`
 - `ecommerce_workflow` → 读取 `workflows/ecommerce-workflow.yaml`，加载 `ecommerce-orchestrator-agent`
 - `self_optimization_workflow` → 读取 `workflows/self-optimization-workflow.yaml`，加载 `self-optimization-agent`
 
-可见流转说明必须写出“已选 workflow、已读取 workflow yaml、已加载入口角色、下一跳交由该入口角色判断”。如果缺少入口角色加载，本次分流未完成。
+可见流转说明只写极简 `【流转留痕】`：`动作`、`依据`、`上下文`、`边界`。已选 workflow、已读取 workflow yaml、已加载入口角色、下一跳入口等细节必须进入内部 packet / workflow state / 日志。如果缺少入口角色加载，本次分流未完成。
+
+进入入口角色前，必须生成或接收符合 `context-isolation-policy.md` 的 `handoff_packet`。入口角色只能消费该 packet 中的结构化字段、引用和约束；workflow 结束后必须返回 `result_packet` 给上一级，供上一级继续判断、回流或收口。
 
 ## 选流规则
 
@@ -158,6 +172,15 @@ entry_rules:
 
 任何 agent 不允许把本 policy 当作跳过 workflow yaml 的依据；进入一级 workflow 后，必须按对应 workflow 的节点与边继续推进。
 
+## 软上下文隔离归属
+
+软上下文隔离的字段、压缩规则、禁止项和入口角色职责，以 `.trae/policies/context-isolation-policy.md` 为唯一事实来源。
+
+- workflow yaml 只声明自身 `context_policy`、入口职责和 state 字段，不复写完整 packet 字段解释。
+- 入口角色负责把 `handoff_packet` 展开成本 workflow 可消费 state，并在结束时压缩为 `result_packet`。
+- 上一级 workflow 只能根据 `result_packet.status`、`state_delta`、`pass_flags`、`node_completion_sources`、`next_recommendation` 和 `packet_refs` 继续判断。
+- 日志系统只记录 packet 引用和摘要，不记录完整 packet。
+
 ## 何时允许 LLM 路由
 
 允许 LLM 做“语义分类”，但不允许做不可审计的自由路由。
@@ -176,7 +199,7 @@ entry_rules:
 
 - LLM 语义判断必须落成结构化字段。
 - 硬排除条件优先级高于语义命中。
-- 可见流转说明默认只输出 `【流转留痕】` 精简段，写明命中了 `semantic_intent`、`hard_triggers` 还是 `hard_exclusions`。
+- 可见流转说明默认只输出 `【流转留痕】` 极简段；`entry_rule_type`、事实来源、节点层级等细节进入内部 packet / workflow state / 日志。
 - `acting_agent`、`current_node`、`node_completion_sources`、`pass_flags` 等细粒度状态必须进入内部 handoff / workflow state；除非宿主要求排查证据，否则不在普通聊天回复里展开。
 
 不允许把以下动作完全交给自由 LLM 决策：

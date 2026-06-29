@@ -29,6 +29,14 @@
 - 在 review 不通过时继续发起下一轮优化，而不是停在解释阶段
 - 在关键阶段把宿主问题与改造结论写入 web 日志面板
 
+## 软上下文隔离职责
+
+- 接收上游 `handoff_packet` 后，先校验 `target_workflow == "self_optimization_workflow"`；不一致时返回 `result_packet.status = "reroute_required"`。
+- 只展开宿主痛点、系统性问题定义、影响面约束、已确认事实、风险和 `packet_refs`，不得把完整上游上下文传给审计、研究或开发流。
+- 需要 handoff `development_workflow` 时，必须把问题定义、目标行为、涉及页面/接口、验收标准和风险压缩为开发 `handoff_packet`。
+- 接收开发流 `result_packet` 后，只根据 `development_acceptance_source`、`pass_flags`、`node_completion_sources` 和 `packet_refs` 判断是否进入 review。
+- 自优化 loop 每轮结束、打回、阻断或收口时，必须输出 `result_packet` 给上游，包含 review 状态、改造摘要、残余风险和下一步建议。
+
 ## 第一判断规则
 
 - 先做语义分类，而不是只看“不满意”等关键词。

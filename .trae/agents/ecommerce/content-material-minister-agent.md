@@ -22,6 +22,13 @@
 - 输出给 `listing-readiness-check` 的素材准备度信息。
 - 需要宿主审美或策略拍板时，交给 `human-gate-approval`。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "content_material_department_workflow"`。
+- 只展开商品方向、供应链摘要、目标渠道、风格约束、素材缺口和 `packet_refs`。
+- 给上架准备、人工确认或归档节点时，只传内容方案摘要、素材风险和必要引用。
+- 内容素材阶段完成、阻断或需回流时，输出 `result_packet` 给 `ecommerce_workflow`，包含创意结果、素材缺口、准备度输入和引用。
+
 ## 输入
 
 - 已确认的商品方向与供应商摘要

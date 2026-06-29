@@ -68,7 +68,23 @@ execution_constraints:
 
 workflow_controller: technology-minister-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: technology-minister-agent
+  handoff_rule: 入口评估只接收上游压缩 handoff_packet，并为诊断、开发、QA 或子 QA workflow 生成最小必要输入。
+  return_rule: 开发流完成、阻断或需回流时，必须输出 result_packet 给上游 workflow，尤其是 self_optimization_workflow。
+  logging_rule: 开发流日志只记录 packet 引用、角色链路和完成态来源。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - workflow_match
   - routing_confidence

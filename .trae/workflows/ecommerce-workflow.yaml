@@ -66,7 +66,23 @@ human_gates:
 
 workflow_controller: ecommerce-orchestrator-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: ecommerce-orchestrator-agent
+  handoff_rule: 电商入口只向商品、供应链、内容素材、客服风控或人工确认节点传递最小业务对象和引用。
+  return_rule: 电商主链或二级部门结束后，必须把阶段结论压缩为 result_packet 回传上游。
+  logging_rule: 不记录完整货盘、外部会话或人工确认细节，只记录 packet_refs、摘要和决策状态。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - ecommerce_stage
   - workflow_match

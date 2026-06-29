@@ -34,7 +34,23 @@ entry_rules:
 
 workflow_controller: product-minister-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: product-minister-agent
+  handoff_rule: 商品部入口只接收货盘质检、候选发现或上架准备所需的最小商品对象和引用。
+  return_rule: 商品部完成后必须把质检、候选和上架准备结论压缩为 result_packet 回传 ecommerce_workflow。
+  logging_rule: 不记录完整货盘内容，只记录 packet_refs、质量摘要和阶段状态。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - product_stage
   - workflow_match

@@ -35,6 +35,14 @@
 - 维护开发流角色执行链路：每次分派或回流都必须输出 `acting_agent`、`current_node`、`workflow_edge`、`next_required_node` 和 `role_execution_trace`。
 - 只写入口评估和分派状态；不得代写 `regression_passed`、`uiux_passed`、`acceptance_passed` 或 `development_workflow_completed`。
 
+## 软上下文隔离职责
+
+- 接收上游 `handoff_packet` 后，先校验 `target_workflow == "development_workflow"`；不一致时返回 `result_packet.status = "reroute_required"`。
+- 只展开 packet 中的 `task_brief`、`intent_fields`、`accepted_facts`、`constraints`、`risk_flags`、`blocked_items` 和 `packet_refs`，不得要求下游读取完整上游上下文。
+- 给诊断、后端、前端、UI/UX、功能 QA 或宿主验收分派时，必须生成最小必要 handoff 包或等价的结构化节点输入。
+- 开发流完成、阻断或需要回流时，必须输出 `result_packet`，带上 `pass_flags`、`node_completion_sources`、`role_execution_trace`、`artifact_refs` 和下一步建议。
+- 来自 `self_optimization_workflow` 的开发请求，结果必须通过 `result_packet` 回流给自优化 review，不能在开发流内解释性吞掉。
+
 ## 输入
 
 - 当前用户任务

@@ -24,6 +24,13 @@
 - 不通过时明确问题偏后端还是前端，并回流对应开发 Agent。
 - 通过后把结果交给 `host-acceptance-agent` 做宿主视角最终验收。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "function_qa_workflow"` 或当前节点确属 `development_workflow.regression`。
+- 只展开变更范围、验证目标、已知风险、页面/接口引用和 `packet_refs`。
+- 给宿主验收或回流开发节点时，只传回归摘要、失败证据引用、pass_flags 和完成态来源。
+- 功能 QA 完成、阻断或需回流时，输出 `result_packet` 给 `development_workflow`，包含 `regression_passed`、`node_completion_sources`、失败项和引用。
+
 ## 输入
 
 - 本轮改动范围

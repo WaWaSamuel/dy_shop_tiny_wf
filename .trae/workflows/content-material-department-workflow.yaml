@@ -34,7 +34,23 @@ entry_rules:
 
 workflow_controller: ecommerce-orchestrator-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: creative-strategy-agent
+  handoff_rule: 内容素材入口只接收商品方向、供应链结论、渠道约束和必要引用。
+  return_rule: 内容素材完成后必须把标题、卖点、详情页结构或素材 brief 压缩为 result_packet 回传 ecommerce_workflow。
+  logging_rule: 不记录完整创作上下文，只记录 packet_refs、素材摘要和准备度状态。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - content_stage
   - workflow_match

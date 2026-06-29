@@ -34,7 +34,23 @@ entry_rules:
 
 workflow_controller: ecommerce-orchestrator-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: supplier-lookup-agent
+  handoff_rule: 供应链入口只接收已确认候选、找货约束、成本目标和必要引用。
+  return_rule: 供应链完成后必须把供应商、成本和物流风险结论压缩为 result_packet 回传 ecommerce_workflow。
+  logging_rule: 不记录完整外部站点会话，只记录 packet_refs、供应商摘要和风险状态。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - supply_chain_stage
   - workflow_match

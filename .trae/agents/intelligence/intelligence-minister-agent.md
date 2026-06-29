@@ -34,6 +34,14 @@
 - 判断摘要结果是否可以提交展示、推送或进入归档。
 - 确保阻断、暂停、取消和完成状态都能进入 `workflow-archive-report`。
 
+## 软上下文隔离职责
+
+- 接收上游 `handoff_packet` 后，先校验 `target_workflow == "news_workflow"`；不一致时返回 `result_packet.status = "reroute_required"`。
+- 只展开摘要目标、时间窗口、来源约束、权限状态引用和 `packet_refs`，不得把完整浏览器上下文或完整聊天记录传给摘要 skill。
+- 给守门、恢复、摘要、人工确认或归档节点时，必须压缩为最小结构化输入。
+- 资讯任务完成、暂停、取消或阻断后，必须输出 `result_packet`，包含摘要状态、提交状态、artifact_refs、packet_refs 和下一步建议。
+- 登录态、Cookie、Bridge 或外部站点细节只能通过引用和状态摘要传递，不进入完整 packet 日志。
+
 ## 输入
 
 - 资讯任务描述

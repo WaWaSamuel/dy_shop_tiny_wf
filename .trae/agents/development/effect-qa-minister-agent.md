@@ -25,6 +25,13 @@
 - 页面构建成功或截图可打开不能替代 UI/UX review；只要页面结构、导航入口、节点图、ReactFlow 交互或信息层级发生变化，就必须给出明确的 `uiux_passed` 结论。
 - 只有本 Agent 可以产出 `uiux_passed`；其他开发节点给出的视觉自评只能作为输入材料，不能作为 UI/UX review 通过态。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "effect_qa_workflow"` 或当前节点确属 `development_workflow.uiux_review`。
+- 只展开页面实现摘要、截图或 artifact 引用、评审目标、风格约束和 `packet_refs`。
+- 给前端返工、功能回归或宿主验收时，只传评审摘要、截图引用、pass_flags 和完成态来源。
+- 效果 QA 完成、阻断或需回流时，输出 `result_packet` 给 `development_workflow`，包含 `uiux_passed`、`node_completion_sources`、问题清单和引用。
+
 ## 输入
 
 - 已完成的页面实现

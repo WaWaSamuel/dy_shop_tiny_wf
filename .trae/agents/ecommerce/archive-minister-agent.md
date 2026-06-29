@@ -24,6 +24,13 @@
 - 防止在没有真实产物、人工确认或终态的情况下伪造归档。
 - 为展示台、复盘和后续优化提供干净、可追溯的公司记忆输入。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "archive_department_workflow"` 或上游明确请求归档。
+- 只展开终态摘要、决策、人工确认、产物引用、复盘线索和 `packet_refs`。
+- 给 `workflow-archive-report` 时，只传归档所需最小结构，不传完整上游执行上下文。
+- 归档完成、阻断或需回流时，输出 `result_packet` 给上游 workflow，包含 archive_record、final_status、replay_notes 和引用。
+
 ## 输入
 
 - `workflow_id`

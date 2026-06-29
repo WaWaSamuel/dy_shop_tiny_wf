@@ -32,7 +32,23 @@ entry_rules:
 
 workflow_controller: ecommerce-orchestrator-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: exception-order-agent
+  handoff_rule: 客服风控入口只接收异常订单摘要、物流状态、处理历史引用和人工确认约束。
+  return_rule: 风控处理结束后必须把建议、风险、人工确认结论压缩为 result_packet 回传 ecommerce_workflow。
+  logging_rule: 不记录完整订单隐私数据，只记录 packet_refs、风险摘要和决策状态。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - risk_stage
   - workflow_match

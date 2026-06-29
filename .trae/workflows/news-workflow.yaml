@@ -55,7 +55,23 @@ human_gates:
 
 workflow_controller: news-digest-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: news-digest-agent
+  handoff_rule: 情报入口只接收摘要目标、时间窗口、来源约束和必要引用，不接收完整聊天或浏览器上下文。
+  return_rule: 摘要完成、暂停、取消或阻断后，必须输出 result_packet 给上游 workflow。
+  logging_rule: 资讯日志只记录 packet 引用、摘要状态和 artifact_refs。
+
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - source_type
   - workflow_match

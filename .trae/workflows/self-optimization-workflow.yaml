@@ -35,6 +35,16 @@ entry_rules:
 
 workflow_controller: self-optimization-agent
 
+context_policy:
+  isolation_mode: soft
+  policy_ref: .trae/policies/context-isolation-policy.md
+  input_packet: handoff_packet
+  result_packet: result_packet
+  entry_role_responsibility: self-optimization-agent
+  handoff_rule: 自优化入口只接收宿主痛点、系统性问题定义、约束和引用；向开发流 handoff 时必须压缩为 development_request packet。
+  return_rule: 自优化 loop 每轮结束、打回、阻断或收口时，必须输出 result_packet 给上游继续判断。
+  logging_rule: workflow-log-publish 和 agents-log 只记录 packet 引用、摘要、review 结论和状态。
+
 execution_constraints:
   - 进入本 workflow 后，第一个可见节点必须是 `diagnose`，`acting_agent` 必须是 `self-optimization-agent`
   - 每个节点输出必须包含 `acting_agent`、`current_node`、`workflow_edge`、`next_required_node` 和本节点可写状态；缺少这些字段时视为自优化流证据不足
@@ -46,6 +56,12 @@ execution_constraints:
   - 若需要代码改造，`development_acceptance_passed` 只能来自 `host-acceptance-agent` 的验收通过结果
 
 state_schema:
+  - handoff_packet
+  - result_packet
+  - parent_packet_id
+  - packet_refs
+  - upstream_workflow
+  - return_contract
   - intent_type
   - workflow_match
   - routing_confidence

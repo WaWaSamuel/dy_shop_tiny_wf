@@ -24,6 +24,13 @@
 - 在需要上架准备判断时，调度 `listing-readiness-check`。
 - 为供应链部输出稳定的候选商品上下文、`catalogKey`、风险摘要和人工确认状态。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "product_department_workflow"`。
+- 只展开商品对象摘要、质检/候选/上架准备阶段意图、约束和 `packet_refs`。
+- 给质检、候选发现或上架准备节点时，只传最小必要字段。
+- 商品部完成、阻断或需回流时，输出 `result_packet` 给 `ecommerce_workflow`，包含质量摘要、候选摘要、准备度结论和引用。
+
 ## 输入
 
 - 货盘对象或商品对象

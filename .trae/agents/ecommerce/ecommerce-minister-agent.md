@@ -23,6 +23,14 @@
 - 汇总各二级部门结果，判断下一跳是继续推进、暂停、取消、异常处理还是归档。
 - 保证每个货品围绕稳定 `catalogKey` 形成可追踪工作流资产。
 
+## 软上下文隔离职责
+
+- 接收上游 `handoff_packet` 后，先校验 `target_workflow == "ecommerce_workflow"`；不一致时返回 `result_packet.status = "reroute_required"`。
+- 只展开商品对象摘要、阶段意图、人工确认约束、风险标记和 `packet_refs`，不得把完整货盘、外部会话或隐私数据直接传给下游。
+- 调度商品部、供应链部、内容素材部、客服风控部时，必须为目标入口角色生成最小 `handoff_packet`。
+- 二级部门返回 `result_packet` 后，只根据结构化状态决定继续、暂停、取消、回流或归档。
+- 电商主链结束时必须输出 `result_packet`，包含阶段结果、人工确认来源、artifact_refs、packet_refs 和下一步建议。
+
 ## 输入
 
 - 电商任务摘要

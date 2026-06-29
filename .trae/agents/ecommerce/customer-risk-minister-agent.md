@@ -22,6 +22,13 @@
 - 为 `human-gate-approval` 准备可读的确认上下文。
 - 将暂停、取消、已处理等终态交给归档。
 
+## 软上下文隔离职责
+
+- 接收 `handoff_packet` 后，校验 `target_workflow == "customer_risk_department_workflow"`。
+- 只展开异常订单摘要、物流状态、处理历史引用、风险约束和 `packet_refs`。
+- 给人工确认或归档节点时，只传风险摘要、建议动作、确认选项和必要引用。
+- 客服风控阶段完成、阻断或需回流时，输出 `result_packet` 给 `ecommerce_workflow`，包含异常结论、人工确认状态、残余风险和引用。
+
 ## 输入
 
 - 异常订单信息
