@@ -65,8 +65,8 @@
 
 1. `technology-minister-agent`
 2. `backend-development-agent` / `frontend-development-agent`
-3. `ui-ux-review-agent`
-4. `regression-validation-agent`
+3. `effect-qa-agent`
+4. `function-qa-agent`
 5. `host-acceptance-agent` 做最终宿主验收
 
 最重要的规则是：

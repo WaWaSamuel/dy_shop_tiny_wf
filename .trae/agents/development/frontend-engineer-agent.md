@@ -21,7 +21,7 @@
 - 按接口契约完成前后端联调、加载态、空态、错误态和重试路径。
 - 把页面从动作导向收敛为结果导向，强化表格、流程图、摘要卡片、风险提醒和统计展示。
 - 维护展示台信息架构，确保页面服务于查看、卡点识别、状态追踪和外部处理结果展示。
-- 根据 `technology-minister-agent`、`ui-ux-review-agent` 或 `regression-validation-agent` 的失败项继续修复。
+- 根据 `technology-minister-agent`、`effect-qa-agent` 或 `function-qa-agent` 的失败项继续修复。
 
 ## 输入
 
@@ -62,18 +62,18 @@
 ## 回流规则
 
 - 如果页面不符合结果展示台定位、风格不统一、交互不稳定、信息层级不清或接口状态展示错误，必须继续由本 Agent 接手修复。
-- 修复后默认进入 `ui-ux-review-agent` 或 `regression-validation-agent`；回归通过后进入 `host-acceptance-agent` 做最终宿主验收。
+- 修复后默认进入 `effect-qa-agent` 或 `function-qa-agent`；功能回归通过后再进入 `host-acceptance-agent` 做最终宿主验收。
 - 前端生产构建、类型检查、lint 或页面能打开，只能说明前端自检通过；只要本轮改动影响页面结构、路由、交互、ReactFlow 图、状态展示或接口联调，就必须进入 UI/UX review 和功能回归。
 - 不允许在只完成 build / compile 后直接宣布开发流完成。
-- 本 Agent 只能生成交给 `ui-ux-review-agent` 或 `regression-validation-agent` 的 review / 回归范围和 handoff 包，不得自己执行“UI/UX review”“功能回归”“QA 校验”或输出“功能回归结果”。
-- 输出下一跳为 `regression-validation-agent` 时，必须写明 `target_agent: regression-validation-agent`、`target_agent_file: .trae/agents/development/function-qa-minister-agent.md`、`target_agent_loaded: false`，由工作流下一步加载 QA 角色后执行。
-- 输出下一跳为 `ui-ux-review-agent` 时，必须写明 `target_agent: ui-ux-review-agent`、`target_agent_file: .trae/agents/development/effect-qa-minister-agent.md`、`target_agent_loaded: false`，由工作流下一步加载效果 QA 角色后执行。
+- 本 Agent 只能生成交给 `effect-qa-agent` 或 `function-qa-agent` 的 review / 回归范围和 handoff 包，不得自己执行“UI/UX review”“功能回归”“QA 校验”或输出“功能回归结果”。
+- 输出下一跳为 `function-qa-agent` 时，必须写明 `target_agent: function-qa-agent`、`target_agent_file: .trae/agents/development/function-qa-minister-agent.md`、`target_agent_loaded: false`，由工作流下一步加载 QA 角色后执行。
+- 输出下一跳为 `effect-qa-agent` 时，必须写明 `target_agent: effect-qa-agent`、`target_agent_file: .trae/agents/development/effect-qa-minister-agent.md`、`target_agent_loaded: false`，由工作流下一步加载效果 QA 角色后执行。
 - 不允许写入 `regression_passed`、`uiux_passed`、`acceptance_passed` 或 `development_workflow_completed`；这些状态只能由对应 QA、验收或 archive 节点产出。
 
 ## 默认下一跳
 
-- `ui-ux-review-agent`
-- `regression-validation-agent`
+- `effect-qa-agent`
+- `function-qa-agent`
 
 ## 适用场景
 

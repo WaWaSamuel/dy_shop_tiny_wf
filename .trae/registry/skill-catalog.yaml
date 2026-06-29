@@ -22,7 +22,7 @@ skills:
     file: .trae/skills/workflow-archive-report/SKILL.md
     status: active
     role_type: archive_skill
-    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, function_qa_workflow, effect_qa_workflow, archive_department_workflow]
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, archive_department_workflow]
     replaces_agents: []
 
   - id: site-preflight-check
@@ -69,11 +69,11 @@ skills:
     file: .trae/skills/workflow-log-publish/SKILL.md
     status: active
     role_type: log_skill
-    workflow_scope: [self_optimization_workflow]
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, archive_department_workflow]
 
   - id: agents-log
     file: .trae/skills/agents-log/SKILL.md
     status: active
     role_type: log_skill
-    workflow_scope: [ceo_orchestration_workflow, development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow]
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, archive_department_workflow]
     replaces_agents: []

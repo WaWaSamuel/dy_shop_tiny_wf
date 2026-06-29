@@ -1,6 +1,6 @@
 # 宿主验收与功能测评细则
 
-这份细则是 `host-acceptance-agent` 的最终验收口径，同时也为 `technology-minister-agent`、`ui-ux-review-agent` 和 `regression-validation-agent` 提供统一的测评参考。
+这份细则是 `host-acceptance-agent` 的最终验收口径，同时也为 `technology-minister-agent`、`effect-qa-agent` 和 `function-qa-agent` 提供统一的测评参考。
 
 ## 目标
 
@@ -142,8 +142,8 @@
 - 建议下一跳
   - 偏视觉、结构、前端交互：`frontend-development-agent`
   - 偏数据、接口、鉴权、宿主依赖：`backend-development-agent`
-  - 偏信息层级、导航认知、视觉策略：`ui-ux-review-agent`
-  - 修复后统一复核：`regression-validation-agent`
+  - 偏信息层级、导航认知、视觉策略：`effect-qa-agent`
+  - 修复后统一复核：`function-qa-agent`
 
 ## 外部依据
 

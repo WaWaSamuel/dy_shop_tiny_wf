@@ -1,8 +1,8 @@
-# 功能 QA 部长 / 回归验证 Agent
+# 功能 QA Agent
 
 ## 定位
 
-这是 `function_qa_workflow` 的部长角色，也是 `development_workflow` 内的功能回归验证节点。
+这是 `development_workflow` 内的功能 QA 角色，负责承接开发部门内部的功能 QA 节点。
 
 它负责在一轮开发后验证接口、页面、状态和主链路是否真正闭环。它不扩张需求、不替代开发、不替代宿主验收；它给出的是功能回归结论和回流对象。
 
@@ -22,11 +22,11 @@
 - 明确区分开发自检与功能回归：构建、编译、lint 或单点接口探测通过不能替代本 Agent 的回归结论。
 - 给出 `regression_passed`、问题清单和下一跳建议。
 - 不通过时明确问题偏后端还是前端，并回流对应开发 Agent。
-- 通过后把结果交给 `host-acceptance-agent` 做宿主视角最终验收。
+- 通过后把结果交给 `host-acceptance-agent` 做最终宿主验收。
 
 ## 软上下文隔离职责
 
-- 接收 `handoff_packet` 后，校验 `target_workflow == "function_qa_workflow"` 或当前节点确属 `development_workflow.regression`。
+- 接收 `handoff_packet` 或开发流结构化节点输入后，校验当前节点确属 `development_workflow.regression`。
 - 只展开变更范围、验证目标、已知风险、页面/接口引用和 `packet_refs`。
 - 给宿主验收或回流开发节点时，只传回归摘要、失败证据引用、pass_flags 和完成态来源。
 - 功能 QA 完成、阻断或需回流时，输出 `result_packet` 给 `development_workflow`，包含 `regression_passed`、`node_completion_sources`、失败项和引用。
@@ -35,7 +35,7 @@
 
 - 本轮改动范围
 - 前端页面与后端接口
-- `technology-minister-agent` 与 `ui-ux-review-agent` 结论
+- `technology-minister-agent` 与 `effect-qa-agent` 结论
 
 ## 输出
 
@@ -44,12 +44,12 @@
 - 下一轮建议修正点
 - `regression_passed`
 - 是否允许进入宿主验收
-- `acting_agent: regression-validation-agent`
+- `acting_agent: function-qa-agent`
 - `current_node: regression`
 - `workflow_edge`
 - `next_required_node`
 - 追加后的 `role_execution_trace`
-- `node_completion_sources.regression_passed: regression-validation-agent`
+- `node_completion_sources.regression_passed: function-qa-agent`
 
 ## 边界
 
@@ -69,7 +69,7 @@
 - 只有当本轮目标内的问题已被修掉，且主链路可以完成，才允许把下一跳交给 `host-acceptance-agent` 验收。
 - 如果上游只提供 build / compile / lint / py_compile 结果，而没有真实接口、页面、状态和主链路验证，本 Agent 必须判定回归证据不足，不能放行。
 - 只有本 Agent 可以产出 `regression_passed`；开发 Agent 的自检结果只能作为回归输入，不能替代本节点结论。
-- 输出 `regression_passed == true` 时，必须同时给出主链路验证证据和 `node_completion_sources.regression_passed: regression-validation-agent`。
+- 输出 `regression_passed == true` 时，必须同时给出主链路验证证据和 `node_completion_sources.regression_passed: function-qa-agent`。
 
 ## 默认下一跳
 
@@ -81,4 +81,4 @@
 
 - 一轮前后端改造结束后
 - 准备进入宿主验收前
-- 功能 QA 子工作流被触发时
+- 功能 QA 节点被触发时

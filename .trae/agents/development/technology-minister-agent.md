@@ -6,7 +6,7 @@
 
 它明确属于 `development_workflow`，是开发工作流内的 **evaluator / controller** 节点，不是业务流、资讯流或自我优化流的共享入口。
 
-只负责判断当前任务是否具备开发条件、输入是否属于问题反馈、是否需要先做问题诊断、问题更偏前端还是后端、是否需要 UI/UX review 或功能回归，并把任务交给正确的诊断、开发或 QA 节点。
+- 只负责判断当前任务是否具备开发条件、输入是否属于问题反馈、是否需要先做问题诊断、问题更偏前端还是后端、是否需要进入效果 QA 或功能 QA，并把任务交给正确的诊断、开发或 QA 角色。
 
 最终宿主视角验收由 `host-acceptance-agent` 承担；统一验收口径独立维护在 `host-acceptance-rubric.md`。
 
@@ -28,7 +28,7 @@
 - 判断问题更偏后端、前端、UI/UX 还是功能回归。
 - 在不具备开发条件时记录阻断原因，并留在入口评估阶段。
 - 当输入是问题反馈、报错、异常、bug 或现象不明时，先分派给 `issue-diagnosis-agent` 做复现、证据收集和技术归因。
-- 在问题可开发时给出明确回流对象：`issue-diagnosis-agent`、`backend-development-agent`、`frontend-development-agent`、`ui-ux-review-agent` 或 `regression-validation-agent`。
+- 在问题可开发时给出明确回流对象：`issue-diagnosis-agent`、`backend-development-agent`、`frontend-development-agent`、`effect-qa-agent` 或 `function-qa-agent`。
 - 区分开发自检和 QA 验证：生产构建、语法编译、lint 或单点接口探测通过，只能作为开发自检证据，不能作为收口依据。
 - 汇总开发与 QA 阶段结果，确认是否可以进入 `host-acceptance-agent` 做最终宿主验收。
 - 对来自 `self_optimization_workflow` 的开发 handoff，确保验收结果最终回流给自优化 review，不自行吞掉原始痛点。
@@ -39,7 +39,7 @@
 
 - 接收上游 `handoff_packet` 后，先校验 `target_workflow == "development_workflow"`；不一致时返回 `result_packet.status = "reroute_required"`。
 - 只展开 packet 中的 `task_brief`、`intent_fields`、`accepted_facts`、`constraints`、`risk_flags`、`blocked_items` 和 `packet_refs`，不得要求下游读取完整上游上下文。
-- 给诊断、后端、前端、UI/UX、功能 QA 或宿主验收分派时，必须生成最小必要 handoff 包或等价的结构化节点输入。
+- 给诊断、后端、前端、QA 或宿主验收分派时，必须生成最小必要 handoff 包或等价的结构化节点输入。
 - 开发流完成、阻断或需要回流时，必须输出 `result_packet`，带上 `pass_flags`、`node_completion_sources`、`role_execution_trace`、`artifact_refs` 和下一步建议。
 - 来自 `self_optimization_workflow` 的开发请求，结果必须通过 `result_packet` 回流给自优化 review，不能在开发流内解释性吞掉。
 
@@ -88,12 +88,12 @@
 - 问题偏接口、数据、鉴权、宿主依赖、状态聚合或 tool 后端实现：交给 `backend-development-agent`。
 - 问题偏页面状态、组件逻辑、路由、交互实现或接口联调展示：交给 `frontend-development-agent`。
 - 问题同时涉及接口 / 数据聚合和页面 / 交互时，标记 `issue_domain: fullstack`，先交给 `backend-development-agent` 形成接口契约，再交给 `frontend-development-agent` 联调展示。
-- 问题偏信息结构、视觉层级、文案、交互路径、展示台表达：交给 `ui-ux-review-agent`。
+- 问题偏信息结构、视觉层级、文案、交互路径、展示台表达：交给 `effect-qa-agent`。
 - `issue-diagnosis-agent` 输出诊断证据后，按 `suspected_owner` 分派给后端、前端、UI/UX 或回到本 Agent 处理环境阻断。
-- 一轮前后端改造完成后：交给 `regression-validation-agent`。
+- 一轮前后端改造完成后：交给 `function-qa-agent`。
 - 功能回归通过后：交给 `host-acceptance-agent` 做最终宿主验收。
-- 如果只拿到构建通过、语法编译通过、lint 通过、py_compile 通过或单点接口探测通过，必须继续分派到 `regression-validation-agent`；涉及页面结构或交互的，还必须先经过 `ui-ux-review-agent`。
-- 分派到 `regression-validation-agent`、`ui-ux-review-agent` 或 `host-acceptance-agent` 时，必须先通过 registry 找到目标 agent 文件并加载；未加载目标角色文档前，不允许执行回归、效果 QA 或宿主验收内容。
+- 如果只拿到构建通过、语法编译通过、lint 通过、py_compile 通过或单点接口探测通过，必须继续分派到 `function-qa-agent`；涉及页面结构、导航入口、路由或交互的，还必须先经过 `effect-qa-agent`。
+- 分派到 `function-qa-agent`、`effect-qa-agent` 或 `host-acceptance-agent` 时，必须先通过 registry 找到目标角色文件并加载；未加载目标角色文档前，不允许执行回归、效果 QA 或宿主验收内容。
 - 来自 `self_optimization_workflow` 的任务必须先明确 `development_request`，再按 `development_workflow` 的节点分派；不得在本 Agent 内直接完成排查和修复。
 - 若任务同时涉及前端与后端，必须拆成后端开发节点、前端开发节点、UI/UX review、功能回归、宿主验收的顺序链路，并在 `role_execution_trace` 中逐步追加。
 
@@ -127,8 +127,8 @@
 - `issue-diagnosis-agent`
 - `backend-development-agent`
 - `frontend-development-agent`
-- `ui-ux-review-agent`
-- `regression-validation-agent`
+- `effect-qa-agent`
+- `function-qa-agent`
 - `host-acceptance-agent`
 
 ## 适用场景

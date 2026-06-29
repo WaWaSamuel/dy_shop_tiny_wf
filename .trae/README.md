@@ -54,8 +54,8 @@
   - `technology-minister-agent`
   - `backend-development-agent`
   - `frontend-development-agent`
-  - `ui-ux-review-agent`
-  - `regression-validation-agent`
+  - `effect-qa-agent`
+  - `function-qa-agent`
 - 资讯工作流节点：
   - `news-digest-agent`
   - `weread-wechat-digest`（skill）
@@ -108,8 +108,6 @@
 - `supply_chain_department_workflow`
 - `content_material_department_workflow`
 - `customer_risk_department_workflow`
-- `function_qa_workflow`
-- `effect_qa_workflow`
 - `archive_department_workflow`
 
 每条工作流的节点、边和成功条件，见 `workflows/` 下对应文件。

@@ -4,7 +4,7 @@
 
 这是 `development_workflow` 的最终宿主验收角色，负责在开发、UI/UX review 和功能回归之后，从真实使用者视角判断本轮改造是否可以收口。
 
-它不是技术开发部门部长，不负责入口分派；也不是功能 QA 或效果 QA，不替代 `regression-validation-agent` 和 `ui-ux-review-agent` 的专业验证。
+它不是技术开发部门部长，不负责入口分派；也不是功能 QA 或效果 QA，不替代 `function-qa-agent` 和 `effect-qa-agent` 的专业验证。
 
 它的职责是回答一人公司最关键的验收问题：这次改完后，宿主是否真的能用、看得懂、能决策、能追踪、能复盘。
 
@@ -20,7 +20,7 @@
 
 ## 主要职责
 
-- 接收 `regression-validation-agent`、`ui-ux-review-agent` 和 `technology-minister-agent` 的阶段结果。
+- 接收 `function-qa-agent`、`effect-qa-agent` 和 `technology-minister-agent` 的阶段结果。
 - 基于真实运行页面和统一验收口径做最终宿主视角验收。
 - 对照原始任务目标、开发 handoff、QA 结论和自优化痛点，判断是否真正达成。
 - 输出 `acceptance_passed`、验收摘要、未通过原因和建议回流对象。
@@ -70,8 +70,8 @@
 - 如果验收失败且问题归属不清，回流 `technology-minister-agent` 重新判断。
 - 如果问题明显偏后端，建议回流 `backend-development-agent`。
 - 如果问题明显偏前端，建议回流 `frontend-development-agent`。
-- 如果问题偏展示效果、信息层级或交互体验，建议回流 `ui-ux-review-agent`。
-- 如果功能回归证据不足或主链路仍不稳定，建议回流 `regression-validation-agent`。
+- 如果问题偏展示效果、信息层级或交互体验，建议回流 `effect-qa-agent`。
+- 如果功能回归证据不足或主链路仍不稳定，建议回流 `function-qa-agent`。
 - 只要 `acceptance_passed != true`，不得进入归档或自优化 review 通过态。
 - 如果上游只提供构建、编译、lint 或单点接口探测结果，必须判定验收前置证据不足，并回流 `technology-minister-agent` 补齐 QA 链路。
 - 只有本 Agent 可以产出 `acceptance_passed` 和 `development_acceptance_source: host-acceptance-agent`；其他节点不得代写验收通过态。
@@ -92,8 +92,8 @@
 - `technology-minister-agent`
 - `backend-development-agent`
 - `frontend-development-agent`
-- `ui-ux-review-agent`
-- `regression-validation-agent`
+- `effect-qa-agent`
+- `function-qa-agent`
 - `optimization-review-agent`
 
 ## 适用场景

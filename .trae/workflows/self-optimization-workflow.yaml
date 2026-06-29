@@ -226,7 +226,7 @@ success_criteria:
   - needs_code_change != true or development_handoff_completed == true
   - needs_code_change != true or development_acceptance_passed == true
   - needs_code_change != true or development_acceptance_source == "host-acceptance-agent"
-  - needs_code_change != true or development_role_execution_trace includes ["technology-minister-agent", "regression-validation-agent", "host-acceptance-agent"]
+  - needs_code_change != true or development_role_execution_trace includes ["technology-minister-agent", "function-qa-agent", "host-acceptance-agent"]
 
 failure_policy:
   - if optimization_goal is null: stay_at_diagnose
@@ -243,7 +243,7 @@ failure_policy:
   - if routing_error_detected == true: stay_at_diagnose_and_redefine_problem
   - if needs_code_change == true and development_request is null: retry_redesign_and_apply
   - if needs_code_change == true and development_handoff_completed != true: stay_at_handoff_development
-  - if needs_code_change == true and development_role_execution_trace missing ["technology-minister-agent", "regression-validation-agent", "host-acceptance-agent"]: stay_at_handoff_development_and_require_development_trace
+  - if needs_code_change == true and development_role_execution_trace missing ["technology-minister-agent", "function-qa-agent", "host-acceptance-agent"]: stay_at_handoff_development_and_require_development_trace
   - if development_acceptance_passed == true and development_acceptance_source != "host-acceptance-agent": clear_development_acceptance_and_reroute_to_development_workflow
   - if development_workflow_completed == true and development_completion_source not in ["workflow-archive-report", "development_workflow.archive"]: clear_development_completion_and_reroute_to_development_workflow
   - if development_workflow_completed == true and development_acceptance_passed != true: reroute_to_development_workflow

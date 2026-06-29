@@ -19,8 +19,10 @@
    - 一级选流只进入 `development_workflow` / `news_workflow` / `ecommerce_workflow` / `self_optimization_workflow`
    - 部门级 workflow 是一级流内部的二级 SOP，不作为全局第一跳
    - 一级 workflow 被选中后，必须立刻读取该 workflow yaml，并按 `workflow_controller` / `minister_role` / 起始节点加载入口 agent 或 skill
+   - 二级及以下 workflow 必须以独立 workflow handoff 进入；不允许把子 workflow 的 `minister_role` 伪装成父 workflow 的普通节点直接执行
    - 不允许只输出“属于某 workflow”后跳过入口角色直接执行
    - 跨 workflow 或跨 agent handoff 必须遵守 `.trae/policies/context-isolation-policy.md`，上游只传压缩 `handoff_packet`，下游只回传结构化 `result_packet`
+   - 所有跨 workflow、父子 workflow handoff 和 result 回流，都必须调用 `agents-log` 留痕；不能只在聊天里显示 `【流转留痕】`
 
 4. `technology-minister-agent` 明确属于开发工作流
    - 它是 `development_workflow` 的起点评估节点
@@ -49,6 +51,8 @@
 可见流转说明只写极简 `【流转留痕】`：`动作`、`依据`、`上下文`、`边界`。已选 workflow、已读取 workflow yaml、已加载入口角色、下一跳入口等细节必须进入内部 packet / workflow state / 日志。如果缺少入口角色加载，本次分流未完成。
 
 进入入口角色前，必须生成或接收符合 `context-isolation-policy.md` 的 `handoff_packet`。入口角色只能消费该 packet 中的结构化字段、引用和约束；workflow 结束后必须返回 `result_packet` 给上一级，供上一级继续判断、回流或收口。
+
+父 workflow 进入二级或以下 workflow 时，必须把 `target_workflow` 明确写成目标子 workflow ID，并先完成 handoff 日志记录。子 workflow 返回时，也必须把结果压缩为 `result_packet`，并记录 result 回流日志。
 
 ## 选流规则
 
@@ -163,12 +167,13 @@ entry_rules:
 
 ## 工作流内部路由规则归属
 
-本 policy 只负责全局一级选流，不承载工作流内部 SOP。
+本 policy 只负责全局一级选流与跨 workflow 进入规则，不承载工作流内部 SOP。
 
 - 开发流内部 evaluation / frontend / backend / UI/UX review / regression / recheck 闭环，见 `workflows/development-workflow.yaml` 与 `agents/development/*`。
 - 资讯流内部守门、恢复、摘要、人工确认和归档，见 `workflows/news-workflow.yaml`。
 - 电商流内部守门、货盘质检、候选、供应链、素材、上架准备、异常订单和人工确认，见 `workflows/ecommerce-workflow.yaml` 及部门 SOP。
 - 自我优化 loop 的 intake、影响面扫描、最新范式、handoff、review 和继续 loop，见 `workflows/self-optimization-workflow.yaml` 与 `agents/optimization/optimization-minister-agent.md`。
+- 二级及以下 workflow 的入口规则、回流规则和局部日志节点，以对应 workflow yaml 为准；父 workflow 只负责 handoff，不直接代替子 workflow 入口角色执行。
 
 任何 agent 不允许把本 policy 当作跳过 workflow yaml 的依据；进入一级 workflow 后，必须按对应 workflow 的节点与边继续推进。
 

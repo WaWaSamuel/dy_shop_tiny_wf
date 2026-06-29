@@ -45,14 +45,14 @@
 - `suspected_owner`
 - `issue_domain`
 - `page_targets` / `api_targets`
-- 建议下一跳：`backend-development-agent`、`frontend-development-agent`、`ui-ux-review-agent`、`technology-minister-agent`
+- 建议下一跳：`backend-development-agent`、`frontend-development-agent`、`effect-qa-agent`、`technology-minister-agent`
 
 ## 诊断规则
 
 - 若接口状态码、字段契约、鉴权、数据聚合、后端 tool 实现或状态流转异常，优先标记 `suspected_owner: backend-development-agent`。
 - 若页面状态、组件逻辑、路由、交互响应、前端状态管理或接口展示映射异常，优先标记 `suspected_owner: frontend-development-agent`。
 - 若问题同时包含接口契约和页面联调表现，标记 `issue_domain: fullstack`，先交后端确认契约，再交前端联调。
-- 若问题是信息层级、文案表达、视觉负担或交互路径不清，标记 `suspected_owner: ui-ux-review-agent`。
+- 若问题是信息层级、文案表达、视觉负担或交互路径不清，标记 `suspected_owner: effect-qa-agent`，并建议下一跳进入 `effect-qa-agent`。
 - 若问题来自环境未启动、白名单命令失败、依赖缺失或 Bridge 不可用，回流 `technology-minister-agent` 做环境阻断处理。
 - 若无法复现，必须输出“未复现”和缺失证据，不得把猜测当成根因。
 
@@ -61,7 +61,7 @@
 - 诊断后若疑似后端，下一跳进入 `backend-development-agent`。
 - 诊断后若疑似前端，下一跳进入 `frontend-development-agent`。
 - 诊断后若疑似全栈，下一跳先进入 `backend-development-agent`，再进入 `frontend-development-agent`。
-- 诊断后若疑似 UI/UX 表达问题，下一跳进入 `ui-ux-review-agent` 或回到 `technology-minister-agent` 重新分派。
+- 诊断后若疑似 UI/UX 表达问题，下一跳进入 `effect-qa-agent` 或回到 `technology-minister-agent` 重新分派。
 - 修复完成后仍必须进入 UI/UX review、功能回归和宿主验收；诊断结论不能替代这些节点。
 - 本 Agent 只能生成诊断结论和下一跳 handoff 包，不得自己执行“功能回归”“QA 校验”“UI/UX review”或“宿主验收”。
 - 输出下一跳为 QA 或验收角色时，必须写明目标 agent 与目标文件，并保持 `target_agent_loaded: false`，由工作流下一步加载对应角色后执行。
@@ -79,7 +79,7 @@
 
 - `backend-development-agent`
 - `frontend-development-agent`
-- `ui-ux-review-agent`
+- `effect-qa-agent`
 - `technology-minister-agent`
 
 ## 适用场景

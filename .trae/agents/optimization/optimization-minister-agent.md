@@ -102,7 +102,7 @@
 - 当 `needs_code_change == true` 时，必须产出结构化 `development_request`，至少包含：背景问题、目标行为、涉及页面 / 接口、验收标准、回归风险。
 - `development_workflow` 完成并通过 `host-acceptance-agent` 宿主验收后，结果必须回流到 `self_optimization_workflow.review`。
 - 若开发流尚未完成、宿主验收尚未通过、或 review 尚未通过，不允许宣称问题已解决。
-- handoff 到 `development_workflow` 后，必须要求下游返回 `development_role_execution_trace`，至少包含 `technology-minister-agent`、实际开发 Agent、`regression-validation-agent` 和 `host-acceptance-agent`。
+- handoff 到 `development_workflow` 后，必须要求下游返回 `development_role_execution_trace`，至少包含 `technology-minister-agent`、实际开发 Agent、`function-qa-agent` 和 `host-acceptance-agent`。
 - `development_acceptance_passed` 只能信任来源为 `host-acceptance-agent` 的 `acceptance_passed == true`；构建、编译、开发自检、技术部长判断或解释性总结都不能替代。
 - 如果开发流返回“已完成”但缺少 QA 或宿主验收 trace，必须停留在 handoff 阶段并要求补齐开发闭环，不得进入 optimization review。
 

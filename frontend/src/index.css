@@ -878,23 +878,39 @@ a {
   overflow: hidden;
 }
 
+.orchestration-hero .ant-card-body {
+  padding: 10px 14px !important;
+}
+
 .orchestration-hero::after {
   content: '';
   position: absolute;
-  right: 28px;
-  bottom: -18px;
-  width: 150px;
-  height: 150px;
+  right: 18px;
+  bottom: -28px;
+  width: 88px;
+  height: 88px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 196, 221, 0.32), rgba(255, 255, 255, 0));
+  background: radial-gradient(circle, rgba(255, 196, 221, 0.18), rgba(255, 255, 255, 0));
   pointer-events: none;
 }
 
 .orchestration-hero-main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
+  min-height: 38px;
+}
+
+.orchestration-hero-summary {
+  min-width: 0;
+}
+
+.orchestration-hero-title {
+  margin: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
 }
 
 .orchestration-graph-card {

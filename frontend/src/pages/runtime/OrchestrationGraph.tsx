@@ -54,7 +54,7 @@ import type {
   OrchestrationNodeKind,
 } from '@/types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 const kindConfig: Record<OrchestrationNodeKind, { label: string; color: string; icon: React.ReactNode }> = {
   workflow: { label: 'Workflow', color: 'geekblue', icon: <DeploymentUnitOutlined /> },
@@ -485,25 +485,18 @@ export default function OrchestrationGraph() {
       {contextHolder}
       <Card className="surface-card orchestration-hero">
         <div className="orchestration-hero-main">
-          <Space direction="vertical" size={8}>
-            <Space wrap>
-              <Tag color="blue" icon={<ApartmentOutlined />}>
-                .trae 编排资产
-              </Tag>
-              <Tag>事实源：{payload?.source.registry || '.trae/registry'}</Tag>
-              <Tag>Workflow：{payload?.summary.workflowCount ?? '-'}</Tag>
-              <Tag>Agent：{payload?.summary.activeAgentCount ?? '-'}/{payload?.summary.agentCount ?? '-'}</Tag>
-              <Tag>Skill：{payload?.summary.skillCount ?? '-'}</Tag>
-              <Tag>Tool：{payload?.summary.toolCount ?? '-'}</Tag>
-            </Space>
-            <Title level={3} style={{ margin: 0 }}>
+          <Space className="orchestration-hero-summary" size={[10, 6]} wrap>
+            <Title level={5} className="orchestration-hero-title">
               {isWorkflowView ? workflowGraph?.label || workflowId : '一级 Workflow 编排总图'}
             </Title>
-            <Text type="secondary">
-              {isWorkflowView
-                ? workflowGraph?.description || '当前 Workflow 的直接子图、内部节点与边关系。点击 Workflow 节点可继续下钻。'
-                : '从一级选流开始展示，点击 Workflow 后逐层进入子图；Web 只展示编排资产，不承载 Agent Runtime。'}
-            </Text>
+            <Tag color="blue" icon={<ApartmentOutlined />}>
+              .trae 编排资产
+            </Tag>
+            <Tag>事实源：{payload?.source.registry || '.trae/registry'}</Tag>
+            <Tag>Workflow：{payload?.summary.workflowCount ?? '-'}</Tag>
+            <Tag>Agent：{payload?.summary.activeAgentCount ?? '-'}/{payload?.summary.agentCount ?? '-'}</Tag>
+            <Tag>Skill：{payload?.summary.skillCount ?? '-'}</Tag>
+            <Tag>Tool：{payload?.summary.toolCount ?? '-'}</Tag>
           </Space>
           <Space wrap>
             {isWorkflowView ? (

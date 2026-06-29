@@ -48,7 +48,7 @@ agents:
     layer: workflow
     primary_inputs: [handoff_packet, user_task, pages, routes, logs, screenshots, environment_state]
     primary_outputs: [handoff_packet, result_packet, evaluation_summary, issue_domain, next_dev_agent, acceptance_ready]
-    default_next: [issue-diagnosis-agent, backend-development-agent, frontend-development-agent, ui-ux-review-agent, regression-validation-agent, host-acceptance-agent, ceo-orchestrator-agent]
+    default_next: [issue-diagnosis-agent, backend-development-agent, frontend-development-agent, effect-qa-agent, function-qa-agent, host-acceptance-agent, ceo-orchestrator-agent]
 
   - id: issue-diagnosis-agent
     file: .trae/agents/development/issue-diagnosis-agent.md
@@ -58,17 +58,17 @@ agents:
     layer: workflow
     primary_inputs: [problem_report, screenshots, logs, page_targets, api_targets, environment_state, evaluation_summary]
     primary_outputs: [diagnosis_summary, reproduction_steps, diagnostic_evidence, suspected_owner, issue_domain, next_dev_agent]
-    default_next: [backend-development-agent, frontend-development-agent, ui-ux-review-agent, technology-minister-agent]
+    default_next: [backend-development-agent, frontend-development-agent, effect-qa-agent, technology-minister-agent]
 
   - id: host-acceptance-agent
     file: .trae/agents/development/host-acceptance-agent.md
     status: active
     role_type: acceptance
-    workflow_scope: [development_workflow, function_qa_workflow, effect_qa_workflow]
+    workflow_scope: [development_workflow]
     layer: workflow
     primary_inputs: [user_task, evaluation_summary, uiux_result, regression_result, screenshots, environment_state]
     primary_outputs: [acceptance_passed, acceptance_summary, reroute_target, archive_allowed]
-    default_next: [workflow-archive-report, technology-minister-agent, backend-development-agent, frontend-development-agent, ui-ux-review-agent, regression-validation-agent, optimization-review-agent]
+    default_next: [workflow-archive-report, technology-minister-agent, backend-development-agent, frontend-development-agent, effect-qa-agent, function-qa-agent, optimization-review-agent]
 
   - id: backend-development-agent
     file: .trae/agents/development/senior-backend-engineer-agent.md
@@ -78,7 +78,7 @@ agents:
     layer: workflow
     primary_inputs: [prd, api_model, evaluation_feedback]
     primary_outputs: [backend_changes, interface_notes, regression_ready]
-    default_next: [frontend-development-agent, regression-validation-agent]
+    default_next: [frontend-development-agent, function-qa-agent]
 
   - id: frontend-development-agent
     file: .trae/agents/development/frontend-engineer-agent.md
@@ -88,23 +88,23 @@ agents:
     layer: workflow
     primary_inputs: [prd, ui_structure, api_contract, evaluation_feedback]
     primary_outputs: [frontend_changes, interaction_notes, review_ready]
-    default_next: [ui-ux-review-agent, regression-validation-agent]
+    default_next: [effect-qa-agent, function-qa-agent]
 
-  - id: ui-ux-review-agent
+  - id: effect-qa-agent
     file: .trae/agents/development/effect-qa-minister-agent.md
     status: active
     role_type: reviewer
-    workflow_scope: [development_workflow, effect_qa_workflow]
+    workflow_scope: [development_workflow]
     layer: workflow
     primary_inputs: [handoff_packet, page_implementation, screenshots, review_targets]
     primary_outputs: [result_packet, uiux_findings, pass_fail, frontend_reroute]
-    default_next: [frontend-development-agent, regression-validation-agent]
+    default_next: [frontend-development-agent, function-qa-agent]
 
-  - id: regression-validation-agent
+  - id: function-qa-agent
     file: .trae/agents/development/function-qa-minister-agent.md
     status: active
     role_type: validator
-    workflow_scope: [development_workflow, function_qa_workflow]
+    workflow_scope: [development_workflow]
     layer: workflow
     primary_inputs: [handoff_packet, change_scope, api_status, page_status, prior_findings]
     primary_outputs: [result_packet, regression_result, fix_backlog, retest_signal]
@@ -229,7 +229,7 @@ agents:
     file: .trae/agents/ecommerce/archive-minister-agent.md
     status: active
     role_type: archivist
-    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, function_qa_workflow, effect_qa_workflow, archive_department_workflow]
+    workflow_scope: [development_workflow, news_workflow, ecommerce_workflow, self_optimization_workflow, ceo_orchestration_workflow, product_department_workflow, supply_chain_department_workflow, content_material_department_workflow, customer_risk_department_workflow, archive_department_workflow]
     layer: workflow
     primary_inputs: [handoff_packet, workflow_results, artifacts, decisions, terminal_state]
     primary_outputs: [result_packet, archive_policy, archive_summary, asset_index, final_status]

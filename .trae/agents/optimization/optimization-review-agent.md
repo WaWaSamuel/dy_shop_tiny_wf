@@ -60,7 +60,7 @@
 - 若宿主原问题属于痛点 / 不满意 / 路由错误，而本轮没有先经过 `self_optimization_workflow` intake，则必须判定为不通过
 - 若本轮需要代码改造，但没有 handoff `development_workflow`，必须判定为不通过
 - 若 `development_workflow` 已介入，但验收或回流 review 尚未完成，必须判定为不通过
-- 若 `development_workflow` 已介入，但 `development_role_execution_trace` 不包含 `technology-minister-agent`、实际开发 Agent、`regression-validation-agent` 和 `host-acceptance-agent`，必须判定为不通过
+- 若 `development_workflow` 已介入，但 `development_role_execution_trace` 不包含 `technology-minister-agent`、实际开发 Agent、`function-qa-agent` 和 `host-acceptance-agent`，必须判定为不通过
 - 若 `development_acceptance_passed == true` 但 `development_acceptance_source != "host-acceptance-agent"`，必须判定为不通过
 - 若开发结果只提供 build / compile / lint / py_compile 或单点接口探测证据，而没有 UI/UX review、功能回归和宿主验收结论，必须判定为不通过
 
