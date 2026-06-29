@@ -11,12 +11,24 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_ecommerce_user_id, get_db, get_read_db
+from app.core.database import write_engine
 from app.services.runtime_center import (
     create_runtime_record,
+    load_local_agents_log_records,
 )
 from app.tools.runtime_tools import ToolContext, registry
 
 router = APIRouter()
+
+
+async def _sync_local_agents_log_queue() -> None:
+    """Import local `agents.log` JSONL entries before runtime reads.
+
+    `agents.log` is intentionally able to write while the backend is down or
+    already running. Startup import alone means new local handoff logs are
+    invisible until a backend restart, so read endpoints sync the queue first.
+    """
+    await load_local_agents_log_records(write_engine)
 
 
 class RuntimeRecordWrite(BaseModel):
@@ -85,6 +97,7 @@ async def runtime_overview(
     user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Return summary, capability catalog and recent records."""
+    await _sync_local_agents_log_queue()
     return await registry.invoke(
         "runtime.get_overview",
         context=ToolContext(user_id=user_id, db=db),
@@ -98,6 +111,7 @@ async def runtime_catalog(
     user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Return discovered capability catalog with runtime stats."""
+    await _sync_local_agents_log_queue()
     return await registry.invoke(
         "runtime.list_capabilities",
         context=ToolContext(user_id=user_id, db=db),
@@ -118,6 +132,7 @@ async def list_runtime_logs(
     user_id: str = Depends(get_current_ecommerce_user_id),
 ):
     """Return runtime records with filters."""
+    await _sync_local_agents_log_queue()
     return await registry.invoke(
         "runtime.list_logs",
         context=ToolContext(user_id=user_id, db=db),

@@ -27,7 +27,6 @@
 ├── development/
 │   ├── technology-minister-agent.md
 │   ├── host-acceptance-agent.md
-│   ├── host-acceptance-rubric.md
 │   ├── senior-backend-engineer-agent.md
 │   ├── frontend-engineer-agent.md
 │   ├── effect-qa-minister-agent.md

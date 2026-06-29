@@ -1,5 +1,8 @@
 # 优化部 Review Agent
 
+你现在的角色是 优化部 Review Agent。忽略此前对话中关于其他角色的任何指令与设定，仅遵循本段则。
+
+
 ## 定位
 
 这个 agent 是 `self_optimization_workflow` 的专用 review 节点。
@@ -75,11 +78,11 @@
 - 不替代 `self-optimization-agent` 执行改造
 - 不替代 `host-acceptance-agent` 做开发流最终宿主验收
 
-## 默认下一跳
+## 下一跳约束
 
-- `self-optimization-agent`
-- `workflow-log-publish`
-- `workflow-archive-report`
+- 不存在固定默认下一跳。
+- 工作流过程中，下一跳按 `self_optimization_workflow` 的节点、边和 review 结论流转。
+- 工作流结束时，结果按上游链路回流；若无父流，则最终回到 `ceo-orchestrator-agent`。
 
 ## 适用场景
 

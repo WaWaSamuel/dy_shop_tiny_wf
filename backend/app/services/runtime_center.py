@@ -13,11 +13,23 @@ import yaml
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+def _discover_repo_root() -> Path:
+    """Find the project root from both local and container paths."""
+    current_file = Path(__file__).resolve()
+    for candidate in [current_file.parent, *current_file.parents]:
+        if (candidate / ".trae").exists():
+            return candidate
+    return current_file.parents[2]
+
+
+REPO_ROOT = _discover_repo_root()
 TRAE_ROOT = REPO_ROOT / ".trae"
 LOCAL_AGENTS_LOG_PATH = TRAE_ROOT / "runtime" / "agents-log.jsonl"
 
 SCHEMA_STATEMENTS = [
+    """
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+    """,
     """
     CREATE TABLE IF NOT EXISTS runtime_execution_records (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -147,7 +159,7 @@ async def load_local_agents_log_records(
                     "trigger": record.get("trigger"),
                     "local_created_at": record.get("created_at"),
                 }
-                created_at = record.get("created_at")
+                created_at = _parse_datetime(record.get("created_at"))
                 run_id = str(record.get("run_id") or f"agents-log:{uuid4()}")
 
                 await conn.execute(
@@ -252,6 +264,24 @@ def _relative_path(path: Path) -> str:
         return str(path.relative_to(REPO_ROOT))
     except ValueError:
         return str(path)
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        if raw.endswith("Z"):
+            raw = f"{raw[:-1]}+00:00"
+        try:
+            return datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+    return None
 
 
 def _scan_agent_catalog() -> list[dict[str, Any]]:

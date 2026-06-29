@@ -66,6 +66,8 @@ execution_constraints:
   - "`technology-minister-agent` 只能产出入口评估、分派和回流判断，不得直接替代后端、前端、UI/UX、功能 QA 或宿主验收执行对应节点"
   - "`regression_passed` 只能由 `function-qa-agent` 在 `regression` 节点产出；`uiux_passed` 只能由 `effect-qa-agent` 在 `uiux_review` 节点产出；`acceptance_passed` 只能由 `host-acceptance-agent` 在 `host_acceptance` 节点产出"
   - "`development_workflow_completed` 只能在 `host-acceptance-agent` 输出 `acceptance_passed == true` 后，由 `archive` 或回流摘要标记为 true"
+  - "`host_acceptance` 只负责产出宿主验收结论；开发流通过后的上游回流顺序属于 workflow 契约，不在 `host-acceptance-agent` 角色文档内定义"
+  - "当 `acceptance_passed == true` 时，开发流必须先回到 `technology-minister-agent` 做本流收口，再按父流链路继续回流；若无父流，则最终回到 `ceo-orchestrator-agent` 由 CEO 对宿主汇报结论"
 
 workflow_controller: technology-minister-agent
 
@@ -302,6 +304,7 @@ success_criteria:
   - acceptance_passed == true
   - development_acceptance_source == "host-acceptance-agent"
   - development_workflow_completed == true
+  - next_required_node == "technology-minister-agent" or next_required_node == "optimization-review-agent" or next_required_node == "ceo-orchestrator-agent"
   - build_result is not terminal
   - compile_result is not terminal
   - qa_required != true or regression_passed == true
@@ -332,4 +335,5 @@ failure_policy:
   - if build_or_compile_passed == true and acceptance_passed != true: do_not_archive_and_continue_to_host_acceptance
   - if repeated_failure_rounds >= 3: escalate_to_ceo-orchestrator-agent
   - if upstream_workflow == "self_optimization_workflow" and acceptance_passed != true: do_not_archive_and_continue_development_loop
+  - if acceptance_passed == true and next_required_node not in ["technology-minister-agent", "optimization-review-agent", "ceo-orchestrator-agent"]: clear_next_required_node_and_reroute_to_technology_minister
   - if upstream_workflow == "self_optimization_workflow" and regression_passed == true and acceptance_passed == true: return_results_to_self_optimization_review
